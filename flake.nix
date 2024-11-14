@@ -22,6 +22,7 @@
               seaborn
               scipy
               nbdime
+              xlrd
             ]))
             git
           ];
