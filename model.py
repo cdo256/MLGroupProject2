@@ -1,5 +1,4 @@
-
-def sklearn_param_search(model, param_grid, X, y)
+def sklearn_param_search(model, param_grid, X, y):
     grid_search = sklearn.model_selection.GridSearchCV(
         model,
         param_grid
