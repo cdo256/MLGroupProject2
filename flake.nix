@@ -22,6 +22,8 @@
               seaborn
               scipy
               nbdime
+              xlrd
+              openpyxl
             ]))
             git
           ];
