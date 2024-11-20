@@ -76,8 +76,8 @@ These files should contain classes such as `LinearRegression`, `ANNRegressor` cl
   Trains the regression/classification model on the provided data.
 
   - **Parameters**:
-    - `X`: The input features (as a DataFrame or NumPy array).
-    - `y`: The target values (as a DataFrame or NumPy array).
+    - `X`: The input features as a DataFrame.
+    - `y`: The target values as a DataFrame.
 
   - **Returns**: The training score (R^2) of the model on the provided data.
 
@@ -91,8 +91,8 @@ These files should contain classes such as `LinearRegression`, `ANNRegressor` cl
   Tests the trained linear regression model on new data and returns its performance score.
 
   - **Parameters**:
-    - `X`: The input features (as a DataFrame or NumPy array).
-    - `y`: The target values (as a DataFrame or NumPy array).
+    - `X`: The input features as a DataFrame.
+    - `y`: The target values as a DataFrame.
 
   - **Returns**: The test score (R^2) of the model on the provided data.
 
