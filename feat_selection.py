@@ -13,6 +13,7 @@ from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import cross_val_score
 from collections import Counter, defaultdict
+from preprocess import load, preprocess
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -282,30 +283,29 @@ def evaluate_model(X_train, X_test, y_train, y_test, selected_features):
     accuracy = accuracy_score(y_test, y_pred)
     return accuracy
 
-def main(dataframe_name, top_n_features, predicted_column, outputdataframe_name):
-    # Load the dataset
-    df = pd.read_excel(dataframe_name)
-
-    # Convert DataFrame Columns from String to Integer
-    for column in df.columns:
-        try:
-            # Attempt to convert the column to numeric (integer)
-            df[column] = pd.to_numeric(df[column], errors='coerce')  # Invalid values will be NaN
-            df[column] = df[column].fillna(0).astype(int)  # Fill NaNs with 0 and convert to int
-        except Exception as e:
-            print(f"Skipping column {column}: {e}")
-
-    # Predicted column
-    y = df[predicted_column]
-    df.drop([predicted_column], axis=1, inplace=True)
-    X = df.dropna()
-
+def main(X, y_clf, y_reg, top_n_features):
     # Print and compare results
     print("Comparison of Feature Selection Methods:\n")
     # Split data into train and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    y_train = {}
+    y_test = {}
+    X_train, X_test, y_train['clf'], y_test['clf'], y_train['reg'], y_test['reg'] = \
+        train_test_split(X, y_clf, y_reg, test_size=0.3, random_state=42)
     # Compare the feature selection methods
-    methods = ['t-test', 'ANOVA', 'Chi-Square', 'rfe', 'lasso', 'forward']
+    methods = [
+        # task, method
+        ('clf', 't-test'),
+        ('clf', 'ANOVA'),
+        ('clf', 'Chi-Square'),
+        ('clf', 'rfe'),
+        ('clf', 'forward'),
+        ('reg', 'ANOVA'),
+        ('reg', 'rfe'),
+        ('reg', 'lasso'),
+        ('reg', 'forward')]
+
+    # Dictionary from methods to (accuracy, features)
+    results = {}
 
     selected_features_dict = {}
     best_method = None
@@ -315,26 +315,26 @@ def main(dataframe_name, top_n_features, predicted_column, outputdataframe_name)
     method_accuracies = {}
 
     # Perform feature selection using each method and store the accuracies and selected features
-    for method in methods:
+    for task, method in methods:
+        print(f'task,method: {task, method}')
         if method == 't-test':
-            selected_features_dict[method] = t_test_feature_selection(X_train, y_train)
+            selected_features = t_test_feature_selection(X_train, y_train[task])
         elif method == 'ANOVA':
-            selected_features_dict[method] = anova_feature_selection(X_train, y_train)
+            selected_features = anova_feature_selection(X_train, y_train[task])
         elif method == 'Chi-Square':
-            selected_features_dict[method] = chi_square_feature_selection(X_train, y_train)
+            selected_features = chi_square_feature_selection(X_train, y_train[task])
         elif method == 'rfe':
-            selected_features_dict[method] = rfe_wrapper(X_train, y_train, top_n_features)
+            selected_features = rfe_wrapper(X_train, y_train[task], top_n_features)
         elif method == 'lasso':
-            selected_features_dict[method] = lasso_feature_selection(X_train, y_train)
+            selected_features = lasso_feature_selection(X_train, y_train[task])
         elif method == 'forward':
-            selected_features_dict[method] = forward_selection(X_train, y_train, scoring="entropy")
+            selected_features = forward_selection(X_train, y_train[task], scoring="entropy")
 
         # Evaluate model performance with the selected features
-        selected_features = selected_features_dict[method]
-        accuracy = evaluate_model(X_train, X_test, y_train, y_test, selected_features)
+        accuracy = evaluate_model(X_train, X_test, y_train[task], y_test[task], selected_features)
 
         # Store the method's accuracy
-        method_accuracies[method] = accuracy
+        results[(task, method)] = (accuracy, selected_features)
 
         # Print results
         print(f"{method}:")
@@ -345,7 +345,7 @@ def main(dataframe_name, top_n_features, predicted_column, outputdataframe_name)
         # Update best performing method if necessary
         if accuracy > best_accuracy:
             best_accuracy = accuracy
-            best_method = method
+            best_method = (task, method)
 
     # After evaluating all methods, find the top-performing features across all methods
     all_selected_features = []
@@ -373,18 +373,22 @@ def main(dataframe_name, top_n_features, predicted_column, outputdataframe_name)
     # Combine the top selected features from X with y (target variable)
     top_selected_df = pd.concat([X[top_selected_features], y], axis=1)
 
-    # Output the new DataFrame with top selected features
-    print(f"\nNew DataFrame with top {top_n_features} selected features:")
-    print(top_selected_df.head())  # Show first few rows of the new DataFrame
-
-    # Optionally, return the top_selected_df DataFrame and create csv
-    top_selected_df.to_csv(outputdataframe_name)
-
     return top_selected_df
 
 if __name__ == '__main__':
-    predicted_column_name = 'pCR (outcome)'
-    dataframe_name = "preprocessed.xlsx"
-    outputdataframe_name = "TrainDataset2024.csv"
-    top_n_features = 10
-    main(dataframe_name, top_n_features, predicted_column_name,outputdataframe_name)
+    input_filename = "TrainDataset2024.xls"
+    output_filename = "TrainDataset2024.csv"
+    n = 10
+    base_df = load(input_filename)
+    X_input, y_clf, y_reg = preprocess(base_df)
+    features = main(X_input, y_clf, y_reg, n)
+    print(f'Selecing features {features}')
+    output_df = pd.concat(pp_df[features], y_clf, y_reg)
+
+    # Output the new DataFrame with top selected features
+    print(f"\nNew DataFrame with top {n} selected features:")
+    print(output_df.head())  # Show first few rows of the new DataFrame
+
+    # Optionally, create csv
+    output_df.to_csv(output_filename)
+    print(f'Written output to {output_filename}')

@@ -74,12 +74,11 @@ def label_encode_binary(df):
 # Utility function to get pre-processed data.
 def preprocess(file_name):
     loaded_df = load(file_name)
-    imputed_df = impute_mean(base_df[num_cols])
-    normalized_df = normalize(imputed_df)
-    hot_encoded_df = one_hot_encode(base_df[cat_cols])
-    X = pd.concat([imputed_df, hot_encoded_df], axis=1)
-    y_clf = label_encode_binary(base_df[clf_output_col])
-    y_reg = base_df[reg_output_col]
-    preprocessed = pd.concat([X, y_clf, y_reg], axis=1)
-    #preprocessed.to_excel("preprocessed.xlsx", index=False)
-    return X, y_clf, y_reg
+    impute_mean_df = impute_mean(loaded_df)
+    impute_median_df = impute_median(loaded_df)
+    hot_encoded_df = one_hot_encode(impute_median_df)
+    preprocessed = pd.concat([impute_mean_df, hot_encoded_df], axis=1)
+    preprocessed.to_excel("preprocessed.xlsx", index=False)
+    return preprocessed
+
+preprocess(file_name)
