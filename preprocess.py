@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder
 #to_excel required openpyxl api
 
 base_df = None
@@ -11,39 +12,19 @@ file_name = "TrainDataset2024.xls"
 all_df = pd.read_excel(file_name, index_col = False)
 all_df = all_df.drop(columns=['ID'])
 
+clf_output_col = 'pCR (outcome)'
+reg_output_col = 'RelapseFreeSurvival (outcome)'
+output_cols = [clf_output_col, reg_output_col]
+
 # Boolean columns
-bool_cols = ['pCR (outcome)', 'ER', 'PgR', 'HER2', 'TrippleNegative', 'HistologyType', 'LNStatus', 'Gene']
+bool_cols = ['ER', 'PgR', 'HER2', 'TrippleNegative', 'HistologyType', 'LNStatus', 'Gene']
 
 # Categorical columns including boolean
 cat_cols = ['ChemoGrade', 'Proliferation', 'TumourStage'] + bool_cols
 
 # Numeric columns (continuous)
-num_cols = [col for col in all_df.columns if col not in cat_cols]
+num_cols = [col for col in all_df.columns if col not in cat_cols and col not in output_cols]
 
-'''
-all_df = pd.read_excel(file_name, index_col = False)
-all_df.replace(999, np.nan, inplace=True) 
-all_df = all_df.drop(columns=['ID'])
-print("info")
-print(all_df.max())
-bool_df = all_df[bool_cols]
-cat_df = all_df[cat_cols]
-num_df = all_df[num_cols]
-# Impute mean for continuous numeric columns
-mean_imputer = SimpleImputer(strategy='mean').set_output(transform='pandas')
-mean_imputed = mean_imputer.fit_transform(num_df)
-mean_imputed.to_excel("mean_imputed.xlsx", index=False)
-
-# Impute median for categorical columns
-median_imputer = SimpleImputer(strategy='median').set_output(transform='pandas')
-median_imputed = median_imputer.fit_transform(cat_df)
-median_imputed.to_excel("median_imputed.xlsx", index=False)
-
-# Combine the imputed columns with the rest of the original data
-all_df[num_cols] = mean_imputed
-all_df[cat_cols] = median_imputed
-all_df.to_excel("all_df.xlsx", index=False)
-'''
 
 # Load returns the dataframe frm the loaded data.
 # This sets self.base_df to a this dataframe and returns it.
@@ -65,7 +46,7 @@ def impute_mean(dataframe):
 # Returns an imputed data-frame.
 def impute_median(dataframe):
     median_imputer = SimpleImputer(strategy='median').set_output(transform='pandas')
-    median_imputed = median_imputer.fit_transform(dataframe[cat_cols])
+    median_imputed = median_imputer.fit_transform(dataframe[num_cols])
     return median_imputed
 
 #TODO: More imputation methods?
@@ -85,14 +66,20 @@ def one_hot_encode(imputed_median):
     )
     return hot_encoded_df
 
+def label_encode_binary(df):
+    le = LabelEncoder()
+    le.fit([0.0, 1.0, float('nan')])
+    return le.transform(df)
+
 # Utility function to get pre-processed data.
 def preprocess(file_name):
     loaded_df = load(file_name)
-    impute_mean_df = impute_mean(loaded_df)
-    impute_median_df = impute_median(loaded_df)
-    hot_encoded_df = one_hot_encode(impute_median_df)
-    preprocessed = pd.concat([impute_mean_df, hot_encoded_df], axis=1)
-    preprocessed.to_excel("preprocessed.xlsx", index=False)
-    return preprocessed
-
-preprocess(file_name)
+    imputed_df = impute_mean(base_df[num_cols])
+    normalized_df = normalize(imputed_df)
+    hot_encoded_df = one_hot_encode(base_df[cat_cols])
+    X = pd.concat([imputed_df, hot_encoded_df], axis=1)
+    y_clf = label_encode_binary(base_df[clf_output_col])
+    y_reg = base_df[reg_output_col]
+    preprocessed = pd.concat([X, y_clf, y_reg], axis=1)
+    #preprocessed.to_excel("preprocessed.xlsx", index=False)
+    return X, y_clf, y_reg
