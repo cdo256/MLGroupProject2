@@ -16,5 +16,4 @@ class LinearRegression(RegressionModel):
         return self.model.score(X, y)
 
     def test(self, X, y):
-        #y_pred = self.model.predict(X)
         return self.model.score(X, y)
