@@ -2,10 +2,10 @@ from model import *
 import sklearn.linear_model
 
 class LinearRegression(ClassificationModel):
-    self.param_grid = {}
     def __init__(self, **hyperparams):
+        self.param_grid = {}
         self.hyperparams = hyperparams
-        self.model = linear_model.LinearRegression(**hyperparams)
+        self.model = sklearn.linear_model.LinearRegression(**hyperparams)
     
     def param_search(self, X, y):
         self.model, self.hyperparams = sklearn_param_search(
@@ -13,7 +13,7 @@ class LinearRegression(ClassificationModel):
 
     def train(self, X, y):
         self.model.fit(X, y)
-        return clf.score(X, y)
+        return self.model.score(X, y)
 
     def test(self, X, y):
-        return clf.score(X, y)
+        return self.model.score(X, y)
