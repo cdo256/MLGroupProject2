@@ -22,6 +22,8 @@ bool_cols = ['ER', 'PgR', 'HER2', 'TrippleNegative', 'HistologyType', 'LNStatus'
 # Categorical columns including boolean
 cat_cols = ['ChemoGrade', 'Proliferation', 'TumourStage'] + bool_cols
 
+input_cols = [col for col in all_df.columns if col not in output_cols]
+
 # Numeric columns (continuous)
 num_cols = [col for col in all_df.columns if col not in cat_cols and col not in output_cols]
 
@@ -52,7 +54,7 @@ def impute_median(dataframe):
 #TODO: More imputation methods?
 
 def normalize(dataframe):
-    scaler = StandardScaler()
+    scaler = StandardScaler().set_output(transform='pandas')
     normalized = scaler.fit_transform(dataframe)
     return normalized
 
@@ -73,10 +75,9 @@ def label_encode_binary(df):
 
 # Utility function to get pre-processed data.
 def preprocess(base_df):
-    imputed_df = impute_mean(base_df[num_cols])
+    imputed_df = impute_mean(base_df[input_cols])
     normalized_df = normalize(imputed_df)
-    hot_encoded_df = one_hot_encode(base_df[cat_cols])
-    X = pd.concat([imputed_df, hot_encoded_df], axis=1)
+    X = normalized_df
     y_clf = label_encode_binary(base_df[clf_output_col])
     y_reg = base_df[reg_output_col]
     return X, y_clf, y_reg
