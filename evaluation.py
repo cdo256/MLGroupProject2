@@ -4,6 +4,8 @@ from logistic_regression import LogisticRegression
 from preprocess import Preprocessor
 from sklearn.model_selection import train_test_split
 
+from ann import ANNClassifier, ANNRegressor,KerasANN
+
 # Perform cross-validation
 def evaluate(model, k, task):
     print(f'{model}:')
@@ -33,5 +35,8 @@ def evaluate(model, k, task):
         print(f'{train_accuracy:.03}, {test_accuracy:.03}')
 
 if __name__ == '__main__':
-    evaluate(LinearRegression(), k=10, task='reg')
-    evaluate(LogisticRegression(max_iter=1000), k=10, task='clf')
+    #evaluate(LinearRegression(), k=10, task='reg')
+    #evaluate(LogisticRegression(max_iter=1000), k=10, task='clf')
+    #evaluate(ANNClassifier(random_state = 1, max_iter = 2000),k = 10, task = "clf")
+    #evaluate(ANNRegressor(random_state = 1, max_iter = 5000),k = 10, task = "reg")
+    evaluate(KerasANN(),k = 10,task = "clf")
