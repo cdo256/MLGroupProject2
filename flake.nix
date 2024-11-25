@@ -13,7 +13,7 @@
       in rec {
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
-            (python3.withPackages (ps: with ps; [
+            (python311.withPackages (ps: with ps; [
               numpy
               matplotlib
               scikit-learn
@@ -24,6 +24,7 @@
               nbdime
               xlrd
               openpyxl
+              keras
             ]))
             git
           ];
