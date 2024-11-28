@@ -13,7 +13,7 @@ from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import cross_val_score
 from collections import Counter, defaultdict
-from preprocess import load, preprocess
+from preprocess import Preprocessor
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -376,11 +376,12 @@ def main(X, y_clf, y_reg, top_n_features):
     return top_selected_df
 
 if __name__ == '__main__':
+    pp = Preproessor()
     input_filename = "TrainDataset2024.xls"
     output_filename = "TrainDataset2024.csv"
     n = 10
-    base_df = load(input_filename)
-    X_input, y_clf, y_reg = preprocess(base_df)
+    base_df = pp.load(input_filename)
+    X_input, y_clf, y_reg = pp.preprocess_fit(base_df)
     features = main(X_input, y_clf, y_reg, n)
     print(f'Selecing features {features}')
     output_df = pd.concat(pp_df[features], y_clf, y_reg)
