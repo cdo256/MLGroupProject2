@@ -262,7 +262,6 @@ def forward_selection(X, y, estimators=None, scoring=None, cv=5):
 
     return selected_features
 
-
 def evaluate_model(X_train, X_test, y_train, y_test, selected_features):
     # If selected_features contains names (strings), convert them to numeric indices
     if isinstance(selected_features[0], str):  # Check if the selected features are names
@@ -283,26 +282,31 @@ def evaluate_model(X_train, X_test, y_train, y_test, selected_features):
     accuracy = accuracy_score(y_test, y_pred)
     return accuracy
 
-def main(X, y_clf, y_reg, top_n_features):
+def main(X, y, top_n_features, classifier):
     # Print and compare results
+
     print("Comparison of Feature Selection Methods:\n")
     # Split data into train and test sets
-    y_train = {}
-    y_test = {}
-    X_train, X_test, y_train['clf'], y_test['clf'], y_train['reg'], y_test['reg'] = \
-        train_test_split(X, y_clf, y_reg, test_size=0.3, random_state=42)
+    X_train, X_test, y_train, y_test, = \
+        train_test_split(X, y, test_size=0.3, random_state=42)
+
+
+
     # Compare the feature selection methods
     methods = [
         # task, method
-        ('clf', 't-test'),
-        ('clf', 'ANOVA'),
-        ('clf', 'Chi-Square'),
-        ('clf', 'rfe'),
-        ('clf', 'forward'),
-        ('reg', 'ANOVA'),
-        ('reg', 'rfe'),
-        ('reg', 'lasso'),
-        ('reg', 'forward')]
+        (classifier, 'ANOVA'),
+        (classifier, 'Chi-Square'),
+        (classifier, 'rfe'),
+        (classifier, 'forward'),
+        (classifier, 'ANOVA'),
+        (classifier, 'rfe'),
+        (classifier, 'forward')]
+
+    if classifier == "reg":
+        methods.append(('reg', 'lasso'))
+    elif classifier == "clf":
+        methods.append(('clf', 't-test'))
 
     # Dictionary from methods to (accuracy, features)
     results = {}
@@ -316,6 +320,11 @@ def main(X, y_clf, y_reg, top_n_features):
 
     # Perform feature selection using each method and store the accuracies and selected features
     for task, method in methods:
+        if task == "clf":
+            task = "pCR (outcome)"
+        elif task == "reg":
+            task = "RelapseFreeSurvival (outcome)"
+
         print(f'task,method: {task, method}')
         if method == 't-test':
             selected_features = t_test_feature_selection(X_train, y_train[task])
@@ -365,7 +374,7 @@ def main(X, y_clf, y_reg, top_n_features):
     # Output the results
     print(f"Best performing feature selection method: {best_method}")
     print(f"  With an accuracy of: {best_accuracy:.4f}")
-    print(f"  Selected features: {selected_features_dict[best_method]}")
+    print(f"  Selected features: {selected_features_dict[best_method[1]]}")
 
     print(f"\nTop {top_n_features} selected features from all methods:")
     print(f"  {top_selected_features}")
@@ -376,12 +385,13 @@ def main(X, y_clf, y_reg, top_n_features):
     return top_selected_df
 
 if __name__ == '__main__':
-    pp = Preproessor()
+    pp = Preprocessor()
     input_filename = "TrainDataset2024.xls"
     output_filename = "TrainDataset2024.csv"
     n = 10
     base_df = pp.load(input_filename)
     X_input, y_clf, y_reg = pp.preprocess_fit(base_df)
+    print(y_clf)
     features = main(X_input, y_clf, y_reg, n)
     print(f'Selecing features {features}')
     output_df = pd.concat(pp_df[features], y_clf, y_reg)

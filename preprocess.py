@@ -52,6 +52,9 @@ class Preprocessor:
         self.scaler = StandardScaler().set_output(transform="pandas")
         scaled_df = self.scaler.fit_transform(imputed_df)
 
+        # TO DO, Handle NaN Values
+
+
         # 3. One-hot encode categorical data
         #self.one_hot_encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False).set_output(transform='pandas')
         #hot_encoded = self.one_hot_encoder.fit_transform(df[cat_cols])
@@ -64,11 +67,10 @@ class Preprocessor:
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit([0.0, 1.0, float('nan')])
         label_encoded_clf_np = self.label_encoder.transform(df[clf_output_col])
-        label_encoded_clf_df = pd.DataFrame()
+        label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np, columns=[clf_output_col])
 
         # Combine processed numeric and one-hot encoded data
-        X = scaled_df 
-
+        X = scaled_df
         # 4. Split output columns
         y_clf = label_encoded_clf_df 
         y_reg = df[[reg_output_col]] if reg_output_col in df.columns else pd.DataFrame()
@@ -95,9 +97,9 @@ class Preprocessor:
 
         # Combine processed numeric and one-hot encoded data
         X = scaled_df 
-
+        print(label_encoded_clf_df)
         # 4. Split output columns
-        y_clf = label_encoded_clf_df 
+        y_clf = label_encoded_clf_df
         y_reg = df[[reg_output_col]] if reg_output_col in df.columns else pd.DataFrame()
 
         return X, y_clf, y_reg

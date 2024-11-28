@@ -26,13 +26,13 @@ class PCAvsLDAComparison:
         self.target = target
         self.n_components = n_components
 
-        # Standardize the features
-        self.scaler = StandardScaler()
-        self.data_scaled = self.scaler.fit_transform(self.data)
+        # # Standardize the features
+        # self.scaler = StandardScaler()
+        # self.data_scaled = self.scaler.fit_transform(self.data)
 
         # Split data into training and testing sets
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            self.data_scaled, self.target, test_size=0.2, random_state=42)
+            self.data, self.target, test_size=0.2, random_state=42)
 
         # Get the number of features in the original data
         self.n_features = self.data.shape[1]
@@ -193,39 +193,36 @@ class PCAvsLDAComparison:
         print("Evaluating without any dimensionality reduction...")
         return self.evaluate_classifiers(self.X_train, self.X_test, self.y_train, self.y_test)
 
-def main():
-    # Load the dataset
-    # df = pd.read_csv("TrainDataset2024.csv")
-    # df = pd.read_excel("preprocessed.xlsx")
-    df = pd.read_excel("TrainDataset2024.xls")
-    # Convert DataFrame Columns from String to Integer
-    for column in df.columns:
-        try:
-            # Attempt to convert the column to numeric (integer)
-            df[column] = pd.to_numeric(df[column], errors='coerce')  # Invalid values will be NaN
-            df[column] = df[column].fillna(0).astype(int)  # Fill NaNs with 0 and convert to int
-        except Exception as e:
-            print(f"Skipping column {column}: {e}")
-    y = df['pCR (outcome)']
-    X = df.drop(['pCR (outcome)'], axis=1)
+    def main(self, classifier):
+        # Load the dataset
+        # df = pd.read_csv("TrainDataset2024.csv")
+        # df = pd.read_excel("preprocessed.xlsx")
 
-    # Get the number of features in X
-    top_n_features = X.shape[1]  # This will give the number of columns (features) in X
+        # # Convert DataFrame Columns from String to Integer
+        # for column in df.columns:
+        #     try:
+        #         # Attempt to convert the column to numeric (integer)
+        #         df[column] = pd.to_numeric(df[column], errors='coerce')  # Invalid values will be NaN
+        #         df[column] = df[column].fillna(0).astype(int)  # Fill NaNs with 0 and convert to int
+        #     except Exception as e:
+        #         print(f"Skipping column {column}: {e}")
+        y = self.data[classifier]
+        X = self.data.drop([classifier], axis=1)
 
-    # Initialize the comparison class
-    comparison = PCAvsLDAComparison(X, y, n_components=top_n_features)
+        # Get the number of features in X
+        top_n_features = X.shape[1]  # This will give the number of columns (features) in X
 
-    # Compare performance of No DR, PCA, and LDA
-    results_df = comparison.compare_performance()
+        # Initialize the comparison class
+        comparison = PCAvsLDAComparison(X, y, n_components=top_n_features)
 
-    # Apply the best DR technique to the whole dataset
-    best_dr_df = comparison.apply_best_dr_technique()
+        # Compare performance of No DR, PCA, and LDA
+        results_df = comparison.compare_performance()
 
-    # Print out the resulting transformed dataset
-    print("Transformed Data with Best DR Technique:")
-    print(best_dr_df.head())
+        # Apply the best DR technique to the whole dataset
+        best_dr_df = comparison.apply_best_dr_technique()
 
-    return best_dr_df
+        # Print out the resulting transformed dataset
+        print("Transformed Data with Best DR Technique:")
+        print(best_dr_df.head())
 
-if __name__ == "__main__":
-    main()
+        return best_dr_df

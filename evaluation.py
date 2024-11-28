@@ -4,10 +4,11 @@ from logistic_regression import LogisticRegression
 from preprocess import Preprocessor
 from sklearn.model_selection import train_test_split
 import feat_selection as fs
+from dimensionality_reduction import PCAvsLDAComparison
 
 from ann import ANNClassifier, ANNRegressor,KerasANN
 
-def init():
+def init(toggle):
     global features, pp, base_df
     # Here we want to preprocess the train data first then use the same parameters for the test data.
     # To do this we will use the class Preprocessor which is to be implemented.
@@ -15,11 +16,22 @@ def init():
     top_n_features = 10
     pp = Preprocessor()
     base_df = pp.load('TrainDataset2024.xls')
+
     X, y_clf, y_reg = pp.preprocess_fit(base_df)
-    print(type(X))
-    print(type(y_clf))
-    print(type(y_reg))
-    features = fs.main(X, y_clf, y_reg, top_n_features)
+
+    if toggle == "regression":
+        y = y_reg
+        classifier = "reg"
+    elif toggle == "classification":
+        y = y_clf
+        classifier = "clf"
+    else:
+        print("ERRROR")
+    print(y.columns)
+    reducer = PCAvsLDAComparison(base_df, y, top_n_features)
+    best_df = reducer.main(y.columns[0])
+    print(best_df)
+    features = fs.main(X, y, top_n_features, classifier)
 
 # Perform cross-validation
 def evaluate(model, k, task):
@@ -48,7 +60,8 @@ def evaluate(model, k, task):
         print(f'{train_accuracy:.03}, {test_accuracy:.03}')
 
 if __name__ == '__main__':
-    init()
+    toggle = "regression"
+    init(toggle)
     evaluate(LinearRegression(), k=10, task='reg')
     #evaluate(LogisticRegression(max_iter=1000), k=10, task='clf')
     #evaluate(ANNClassifier(random_state = 1, max_iter = 2000),k = 10, task = "clf")
