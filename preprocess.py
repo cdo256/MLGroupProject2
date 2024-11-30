@@ -67,7 +67,9 @@ class Preprocessor:
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit([0.0, 1.0, float('nan')])
         label_encoded_clf_np = self.label_encoder.transform(df[clf_output_col])
-        label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np, columns=[clf_output_col])
+        #label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np, columns=[clf_output_col])
+
+        label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np)
 
         # Combine processed numeric and one-hot encoded data
         X = scaled_df
@@ -97,7 +99,6 @@ class Preprocessor:
 
         # Combine processed numeric and one-hot encoded data
         X = scaled_df 
-        print(label_encoded_clf_df)
         # 4. Split output columns
         y_clf = label_encoded_clf_df
         y_reg = df[[reg_output_col]] if reg_output_col in df.columns else pd.DataFrame()

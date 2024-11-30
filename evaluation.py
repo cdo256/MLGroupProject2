@@ -5,8 +5,14 @@ from preprocess import Preprocessor
 from sklearn.model_selection import train_test_split
 import feat_selection as fs
 from dimensionality_reduction import PCAvsLDAComparison
+from enum import Enum
 
-from ann import ANNClassifier, ANNRegressor,KerasANN
+from ann import ANNClassifier, ANNRegressor,KerasClassANN, KerasRegANN
+
+class modelType(Enum):
+    REGRESSION = 1
+    CLASSIFICATION = 2
+
 
 def init(toggle):
     global features, pp, base_df
@@ -19,18 +25,19 @@ def init(toggle):
 
     X, y_clf, y_reg = pp.preprocess_fit(base_df)
 
-    if toggle == "regression":
+    if toggle == modelType.REGRESSION:
         y = y_reg
         classifier = "reg"
-    elif toggle == "classification":
+    elif toggle == modelType.CLASSIFICATION:
         y = y_clf
         classifier = "clf"
     else:
         print("ERRROR")
-    print(y.columns)
-    reducer = PCAvsLDAComparison(base_df, y, top_n_features)
-    best_df = reducer.main(y.columns[0])
-    print(best_df)
+
+    print(f"Y Columns:\n{y.columns}")
+    #reducer = PCAvsLDAComparison(base_df, y, top_n_features) ### This does not work currently, related error - "Data needs to be imputed so there are no NAN values"
+    #best_df = reducer.main(y.columns[0])
+    #print(best_df)
     features = fs.main(X, y, top_n_features, classifier)
 
 # Perform cross-validation
@@ -52,18 +59,22 @@ def evaluate(model, k, task):
         y_test = {}
         X_train_full, y_train['clf'] , y_train['reg'] = pp.preprocess_fit(train_df)
         X_test_full, y_test['clf'], y_test['reg'] = pp.preprocess_transform(test_df)
-        X_train = X_test_full[features]
-        X_test = X_test_full[features]
+        X_train = X_train_full[features.columns]
+        X_test = X_test_full[features.columns]
 
         train_accuracy = model.train(X_train, y_train[task])
         test_accuracy = model.test(X_test, y_test[task])
         print(f'{train_accuracy:.03}, {test_accuracy:.03}')
 
 if __name__ == '__main__':
-    toggle = "regression"
-    init(toggle)
+    init(modelType.REGRESSION)
     evaluate(LinearRegression(), k=10, task='reg')
-    #evaluate(LogisticRegression(max_iter=1000), k=10, task='clf')
-    #evaluate(ANNClassifier(random_state = 1, max_iter = 2000),k = 10, task = "clf")
     evaluate(ANNRegressor(random_state = 1, max_iter = 5000),k = 10, task = "reg")
-    #evaluate(KerasANN(),k = 10,task = "clf")
+    evaluate(KerasRegANN(input_dim = len(features.columns),output_size = 1,hid_size = (100,100,100)),k = 10,task = "reg")
+
+
+    init(modelType.CLASSIFICATION)
+    evaluate(LogisticRegression(max_iter=1000), k=10, task='clf')
+    evaluate(ANNClassifier(random_state = 1, max_iter = 2000),k = 10, task = "clf")
+    evaluate(KerasClassANN(input_dim = len(features.columns),output_size = 1,hid_size = (100,100,100)),k = 10,task = "clf")
+    
