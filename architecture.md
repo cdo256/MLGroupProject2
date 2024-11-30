@@ -19,7 +19,7 @@ preprocess.py should contain a class Preprocessor with the following methods:
     - `X` - the remaining columns.
    The transformers for each of the steps should be stored in the Preprocessor object.
  - `preprocess_transform(df)`:
-   This function takes a data-frame that may or may not have the output columns. It should perform the same transformations as `preprocess_fit`, withe the parameters saved in the Preprocessor object.
+   This function takes a data-frame that may or may not have the output columns. It should perform the same transformations as `preprocess_fit`, with the parameters saved in the Preprocessor object.
 
 ## feat_selection.py` features as a list of strings.
 This file should expose a single function

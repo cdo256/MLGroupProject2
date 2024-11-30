@@ -49,7 +49,7 @@ class Preprocessor:
         imputed_df = self.mean_imputer.fit_transform(df[input_cols])
 
         # 2. Normalize numeric data
-        self.scaler = StandardScaler()
+        self.scaler = StandardScaler().set_output(transform="pandas")
         scaled_df = self.scaler.fit_transform(imputed_df)
 
         # 3. One-hot encode categorical data
@@ -57,13 +57,14 @@ class Preprocessor:
         #hot_encoded = self.one_hot_encoder.fit_transform(df[cat_cols])
         #hot_encoded_df = pd.DataFrame(
         #    hot_encoded,
-        #    columns = self.one_hot_encoder.get_feature_names_out(cat_cols),
+        #    columns = self.label_encoder.transform(df[clf_output_col]) self.one_hot_encoder.get_feature_names_out(cat_cols),
         #    index = df.index,
         #)
 
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit([0.0, 1.0, float('nan')])
-        label_encoded_clf_df = self.label_encoder.transform(df[clf_output_col])
+        label_encoded_clf_np = self.label_encoder.transform(df[clf_output_col])
+        label_encoded_clf_df = pd.DataFrame()
 
         # Combine processed numeric and one-hot encoded data
         X = scaled_df 
