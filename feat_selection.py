@@ -15,8 +15,19 @@ from sklearn.model_selection import cross_val_score
 from collections import Counter, defaultdict
 from preprocess import Preprocessor
 
+from BaseClasses import modelType
+from enum import Enum
+
 import warnings
 warnings.filterwarnings("ignore")
+
+class fsMethod(Enum):
+    ANOVA = 0,
+    RFE = 1,
+    FORWARD = 2,
+    LASSO = 3,
+    T_TEST = 4,
+    CHISQUARE = 5
 
 def t_test_feature_selection(X, y, threshold=0.05):
     """
@@ -98,9 +109,9 @@ def rfe_wrapper(X, y, top_n_features,task, estimator=None, step=1):
     """
     # Default estimator if not provided
     if estimator is None:
-        if(task == "clf"):
+        if(task == modelType.CLASSIFICATION):
             estimator = RandomForestClassifier(n_estimators=100, random_state=42)
-        elif (task == "reg"):
+        elif (task == modelType.REGRESSION):
             estimator = RandomForestRegressor(n_estimators=100, random_state=42)
         else:
             print("RFE task error")
@@ -135,7 +146,7 @@ def anova_feature_selection(X, y,task,top_n_features, threshold=0.05):
     print(f"task:{task}")
 
 
-    if(task == "clf"):
+    if(task == modelType.CLASSIFICATION):
         # Perform ANOVA F-test (f_classif)
         f_values, p_values = f_classif(X, y)
 
@@ -152,7 +163,7 @@ def anova_feature_selection(X, y,task,top_n_features, threshold=0.05):
         selector = SelectKBest(f_classif, k = top_n_features)
         selector.fit_transform(X,y)
         selected_features = selector.get_feature_names_out()
-    elif(task == "reg"):
+    elif(task == modelType.REGRESSION):
         selector = SelectKBest(f_regression, k = top_n_features)
         selector.fit_transform(X,y)
         selected_features = selector.get_feature_names_out()
@@ -220,13 +231,13 @@ def forward_selection(X, y, task, estimators=None, scoring=None, cv=5):
     """
     # If no estimators are provided, use default models
     if estimators is None:
-        if(task == "clf"):
+        if(task == modelType.CLASSIFICATION):
             estimators = [
                 LogisticRegression(solver='liblinear'),
                 RandomForestClassifier(),
                 DecisionTreeClassifier()
             ]
-        elif(task == "reg"):
+        elif(task == modelType.REGRESSION):
             estimators = [
                 LinearRegression(),
                 RandomForestRegressor(),
@@ -307,14 +318,15 @@ def evaluate_model(X_train, X_test, y_train, y_test, selected_features,task):
     X_train_selected = X_train.iloc[:, selected_features]
     X_test_selected = X_test.iloc[:, selected_features]
 
-    if(task == "clf"):
+
+    if(task == modelType.CLASSIFICATION):
         model = LogisticRegression(max_iter=200)
         model.fit(X_train_selected, y_train)
          # Predict on the test set
         y_pred = model.predict(X_test_selected)
         # Evaluate the model accuracy
         accuracy = accuracy_score(y_test, y_pred)
-    elif(task == "reg"):
+    elif(task == modelType.REGRESSION):
         model = LinearRegression()
         model.fit(X_train_selected, y_train)
          # Predict on the test set
@@ -336,16 +348,16 @@ def main(X, y, top_n_features, classifier):
     # Compare the feature selection methods
     methods = [
         # task, method
-        (classifier, 'ANOVA'),
-        (classifier, 'rfe'),
-        (classifier, 'forward'),
+        (classifier, fsMethod.ANOVA),
+        (classifier, fsMethod.RFE),
+        (classifier, fsMethod.FORWARD),
     ]
 
-    if classifier == "reg":
-        methods.append((classifier, 'lasso'))
-    elif classifier == "clf":
-        methods.append((classifier, 't-test'))
-        methods.append((classifier, 'Chi-Square'))
+    if classifier == modelType.REGRESSION:
+        methods.append((classifier, fsMethod.LASSO))
+    elif classifier == modelType.CLASSIFICATION:
+        methods.append((classifier, fsMethod.T_TEST))
+        methods.append((classifier, fsMethod.CHISQUARE))
 
     # Dictionary from methods to (accuracy, features)
     results = {}
@@ -366,21 +378,25 @@ def main(X, y, top_n_features, classifier):
 
 
         print(f'task,method: {classifier, method}')
-        if method == 't-test':
-            selected_features = t_test_feature_selection(X_train, y_train)
-        elif method == 'ANOVA':
-            selected_features = anova_feature_selection(X_train, y_train,classifier,top_n_features)
-        elif method == 'Chi-Square':
-            selected_features = chi_square_feature_selection(X_train, y_train,top_n_features)
-        elif method == 'rfe':
-            selected_features = rfe_wrapper(X_train, y_train, top_n_features,classifier)
-        elif method == 'lasso':
-            selected_features = lasso_feature_selection(X_train, y_train)
-        elif method == 'forward':
-            selected_features = forward_selection(X_train, y_train,classifier, scoring="entropy")
+        match(method):
+            case fsMethod.T_TEST:
+                selected_features = t_test_feature_selection(X_train, y_train)
+            case fsMethod.ANOVA:
+                selected_features = anova_feature_selection(X_train, y_train,classifier,top_n_features)
+            case fsMethod.CHISQUARE:
+                selected_features = chi_square_feature_selection(X_train, y_train,top_n_features)
+            case fsMethod.RFE:
+                selected_features = rfe_wrapper(X_train, y_train, top_n_features,classifier)
+            case fsMethod.LASSO:
+                selected_features = lasso_feature_selection(X_train, y_train)
+            case fsMethod.FORWARD:
+                selected_features = forward_selection(X_train, y_train,classifier, scoring="entropy")
+            case _:
+                print("Method not detected")
+                continue
 
-        # Evaluate model performance with the selected features
 
+        # Evaluate model performance with the selected feature
         accuracy = evaluate_model(X_train, X_test, y_train, y_test, selected_features,classifier)
 
         # Store the method's accuracy
