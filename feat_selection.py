@@ -132,6 +132,9 @@ def anova_feature_selection(X, y,task,top_n_features, threshold=0.05):
     - selected_features: List of feature names of selected features
     """
 
+    print(f"task:{task}")
+
+
     if(task == "clf"):
         # Perform ANOVA F-test (f_classif)
         f_values, p_values = f_classif(X, y)
@@ -165,6 +168,7 @@ def chi_square_feature_selection(X, y,top_n_features, threshold=0.05):
     :param threshold: p-value threshold for feature selection
     :return: List of feature names of selected features
     """
+
     # Scale the data to non-negative values using Min-Max scaling
     scaler = MinMaxScaler().set_output(transform = "pandas")
     X_scaled = scaler.fit_transform(X)
@@ -321,32 +325,27 @@ def evaluate_model(X_train, X_test, y_train, y_test, selected_features,task):
 
     return accuracy
 
-def main(X, y_clf, y_reg, top_n_features):
+def main(X, y, top_n_features, classifier):
     # Print and compare results
+
     print("Comparison of Feature Selection Methods:\n")
     # Split data into train and test sets
-    y_train = {}
-    y_test = {}
+    X_train, X_test, y_train, y_test, = \
+        train_test_split(X, y, test_size=0.3, random_state=42)
 
-
-    X_train, X_test, y_train['clf'], y_test['clf'], y_train['reg'], y_test['reg'] = \
-        train_test_split(X, y_clf, y_reg, test_size=0.3, random_state=42)
-    
-
-
-    # Compare the feature selection methods. Low performing methods have been commented out for now (as this still affects the chosen features)
+    # Compare the feature selection methods
     methods = [
         # task, method
-        ('clf', 't-test'),
-        ('clf', 'ANOVA'),
-        ('clf', 'Chi-Square'),
-        ('clf', 'rfe'),
-        ('clf', 'forward'),
-        #('reg', 'ANOVA'),
-        #('reg', 'rfe'),
-        #('reg', 'lasso'),
-        #('reg', 'forward')
+        (classifier, 'ANOVA'),
+        (classifier, 'rfe'),
+        (classifier, 'forward'),
     ]
+
+    if classifier == "reg":
+        methods.append((classifier, 'lasso'))
+    elif classifier == "clf":
+        methods.append((classifier, 't-test'))
+        methods.append((classifier, 'Chi-Square'))
 
     # Dictionary from methods to (accuracy, features)
     results = {}
@@ -359,27 +358,33 @@ def main(X, y_clf, y_reg, top_n_features):
     method_accuracies = {}
 
     # Perform feature selection using each method and store the accuracies and selected features
-    for task, method in methods:
-        print(f'task,method: {task, method}')
+    for classifier, method in methods:
+        # if classifier == "clf":
+        #     task = "pCR (outcome)"
+        # elif classifier == "reg":
+        #     task = "RelapseFreeSurvival (outcome)"
+
+
+        print(f'task,method: {classifier, method}')
         if method == 't-test':
-            selected_features = t_test_feature_selection(X_train, y_train[task])
+            selected_features = t_test_feature_selection(X_train, y_train)
         elif method == 'ANOVA':
-            selected_features = anova_feature_selection(X_train, y_train[task],task,top_n_features)
+            selected_features = anova_feature_selection(X_train, y_train,classifier,top_n_features)
         elif method == 'Chi-Square':
-            selected_features = chi_square_feature_selection(X_train, y_train[task],top_n_features)
+            selected_features = chi_square_feature_selection(X_train, y_train,top_n_features)
         elif method == 'rfe':
-            selected_features = rfe_wrapper(X_train, y_train[task], top_n_features,task)
+            selected_features = rfe_wrapper(X_train, y_train, top_n_features,classifier)
         elif method == 'lasso':
-            selected_features = lasso_feature_selection(X_train, y_train[task])
+            selected_features = lasso_feature_selection(X_train, y_train)
         elif method == 'forward':
-            selected_features = forward_selection(X_train, y_train[task],task, scoring="entropy")
+            selected_features = forward_selection(X_train, y_train,classifier, scoring="entropy")
 
         # Evaluate model performance with the selected features
 
-        accuracy = evaluate_model(X_train, X_test, y_train[task], y_test[task], selected_features,task)
+        accuracy = evaluate_model(X_train, X_test, y_train, y_test, selected_features,classifier)
 
         # Store the method's accuracy
-        results[(task, method)] = (accuracy, selected_features)
+        results[(classifier, method)] = (accuracy, selected_features)
 
         # Print results
         print(f"{method}:")
@@ -390,15 +395,13 @@ def main(X, y_clf, y_reg, top_n_features):
         # Update best performing method if necessary
         if accuracy > best_accuracy:
             best_accuracy = accuracy
-            best_method = (task, method)
+            best_method = (classifier, method)
 
     # After evaluating all methods, find the top-performing features across all methods
     all_selected_features = []
 
     for method, features in results.items():
         all_selected_features.extend(features[1])
-
-    print(all_selected_features)
 
     # Count how many times each feature was selected across all methods
     feature_counts = Counter(all_selected_features)
@@ -412,6 +415,7 @@ def main(X, y_clf, y_reg, top_n_features):
     # Output the results
     print(f"Best performing feature selection method: {best_method}")
     print(f"  With an accuracy of: {best_accuracy:.4f}")
+
     print(f"  Selected features: {results[best_method]}")
 
     print(f"\nTop {top_n_features} selected features from all methods:")
@@ -429,6 +433,7 @@ def main(X, y_clf, y_reg, top_n_features):
 #     n = 10
 #     base_df = pp.load(input_filename)
 #     X_input, y_clf, y_reg = pp.preprocess_fit(base_df)
+#     print(y_clf)
 #     features = main(X_input, y_clf, y_reg, n)
 #     print(f'Selecing features {features}')
 #     output_df = pd.concat(base_df[features], y_clf, y_reg)
