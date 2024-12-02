@@ -9,7 +9,7 @@ from dimensionality_reduction import PCAvsLDAComparison
 
 from ann import ANNClassifier, ANNRegressor,KerasClassANN, KerasRegANN
 from BaseClasses import modelType
-
+from random_forest import RandomForestClassifierModel, RandomForestRegressorModel
 
 
 def init(toggle):
@@ -67,10 +67,10 @@ if __name__ == '__main__':
     evaluate(LinearRegression(), k=10, task=modelType.REGRESSION)
     evaluate(ANNRegressor(random_state = 1, max_iter = 5000),k = 10, task = modelType.REGRESSION)
     evaluate(KerasRegANN(input_dim = len(features.columns),output_size = 1,hid_size = (100,100,100)),k = 10,task = modelType.REGRESSION)
-
+    evaluate(RandomForestRegressorModel(), k=10, task=modelType.REGRESSION)
 
     init(modelType.CLASSIFICATION)
     evaluate(LogisticRegression(max_iter=1000), k=10, task=modelType.CLASSIFICATION)
     evaluate(ANNClassifier(random_state = 1, max_iter = 2000),k = 10, task = modelType.CLASSIFICATION)
     evaluate(KerasClassANN(input_dim = len(features.columns),output_size = 1,hid_size = (100,100,100)),k = 10,task = modelType.CLASSIFICATION)
-    
+    evaluate(RandomForestClassifierModel(), k=10, task=modelType.CLASSIFICATION)
