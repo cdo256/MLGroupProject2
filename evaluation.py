@@ -18,9 +18,7 @@ def init(toggle):
     # To do this we will use the class Preprocessor which is to be implemented.
     # For the time being we will preprocess train and test separately.
     top_n_features = 10
-    pp = Preprocessor()
     base_df = pp.load('TrainDataset2024.xls')
-
     X, y_clf, y_reg = pp.preprocess_fit(base_df)
 
     if toggle == modelType.REGRESSION:
@@ -48,7 +46,7 @@ def evaluate(model, k, task):
     # folds is a list of k groups of roughly equal size
     folds = [fold_df for _, fold_df in shuffled_df.groupby('fold')]
     for test_fold in range(k):
-        # leave out fold with index `test_fold` 
+        # leave out fold with index `test_fold`
         test_df = folds[test_fold]
         train_df = pd.concat([folds[i] for i in range(k) if i != test_fold])
         y_train = {}
@@ -62,15 +60,56 @@ def evaluate(model, k, task):
         test_accuracy = model.test(X_test, y_test[task])
         print(f'{train_accuracy:.03}, {test_accuracy:.03}')
 
-if __name__ == '__main__':
-    init(modelType.REGRESSION)
-    evaluate(LinearRegression(), k=10, task=modelType.REGRESSION)
-    evaluate(ANNRegressor(random_state = 1, max_iter = 5000),k = 10, task = modelType.REGRESSION)
-    evaluate(KerasRegANN(input_dim = len(features.columns),output_size = 1,hid_size = (100,100,100)),k = 10,task = modelType.REGRESSION)
-    evaluate(RandomForestRegressorModel(), k=10, task=modelType.REGRESSION)
 
+            
+
+#Returns a numpy array of the predictions for the model that was passed in
+def predict(model,X_pred):
+    predictions = model.predict(X_pred)
+    return predictions
+
+
+if __name__ == '__main__':
+    pp = Preprocessor()
+
+    testData = pp.load("TestDatasetExample.xls",dropIDs = False)
+    print(testData)
+    pptestData = pp.preprocess_predict(testData)
+
+    annReg = ANNRegressor(random_state = 1, max_iter = 5000)
+
+    init(modelType.REGRESSION)
+    regData = pptestData[features.columns]
+
+    #evaluate(LinearRegression(), k=10, task=modelType.REGRESSION)
+    evaluate(annReg,k = 10, task = modelType.REGRESSION)
+    #evaluate(KerasRegANN(input_dim = len(features.columns),output_size = 1,hid_size = (100,100,100)),k = 10,task = modelType.REGRESSION)
+     # evaluate(RandomForestRegressorModel(), k=10, task=modelType.REGRESSION)
+
+
+    
     init(modelType.CLASSIFICATION)
-    evaluate(LogisticRegression(max_iter=1000), k=10, task=modelType.CLASSIFICATION)
-    evaluate(ANNClassifier(random_state = 1, max_iter = 2000),k = 10, task = modelType.CLASSIFICATION)
-    evaluate(KerasClassANN(input_dim = len(features.columns),output_size = 1,hid_size = (100,100,100)),k = 10,task = modelType.CLASSIFICATION)
-    evaluate(RandomForestClassifierModel(), k=10, task=modelType.CLASSIFICATION)
+    classData = pptestData[features.columns]
+    #evaluate(LogisticRegression(max_iter=1000), k=10, task=modelType.CLASSIFICATION)
+    kerasClass = KerasClassANN(input_dim = len(features.columns),output_size = 1,hid_size = (100,100,100))
+
+    #evaluate(ANNClassifier(random_state = 1, max_iter = 2000, hidden_layer_sizes = (50,)),k = 10, task = modelType.CLASSIFICATION)
+    evaluate(kerasClass,k = 10,task = modelType.CLASSIFICATION)
+    #evaluate(RandomForestClassifierModel(), k=10, task=modelType.CLASSIFICATION)
+
+
+
+
+
+    regPredict = predict(annReg,regData)
+    classPredict = predict(kerasClass,classData)
+
+    
+    dictRegPredict = {"ID": testData["ID"], "RelapseFreeSurvival": regPredict}
+    dictClassPredict = {"ID" : testData["ID"], "pCR (Predicted)": classPredict}
+    df_predictions = pd.DataFrame(dictRegPredict) 
+    df_predictions.to_csv("RFSPrediction.csv",index = False)
+    df_predictions = pd.DataFrame(dictClassPredict)
+    df_predictions.to_csv("PCRPrediction.csv",index = False)
+        
+

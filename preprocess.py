@@ -30,26 +30,26 @@ num_cols = [col for col in all_df.columns if col not in cat_cols and col not in 
 class Preprocessor:
     def __init__(self):
         # Initialize transformers to be used in the pipeline
-        self.mean_imputer = None
-        self.median_imputer = None
-        self.scaler = None
+        self.mean_imputer = SimpleImputer(strategy="mean").set_output(transform="pandas")
+        self.scaler = StandardScaler().set_output(transform="pandas")
         self.one_hot_encoder = None
 
     # Method to load the dataset
-    def load(self, filename):
+    def load(self, filename, dropIDs = True):
         df = pd.read_excel(filename)
         df.replace(999, np.nan, inplace=True)  # Replace 999 with NaN
-        df = df.drop(columns=["ID"], errors="ignore")  # Drop the ID column if it exists
+        if dropIDs:
+            df = df.drop(columns=["ID"], errors="ignore")  # Drop the ID column if it exists
         return df
+
+    
 
     # Fit and transform the data for pre-processing
     def preprocess_fit(self, df, cat_cols=cat_cols, num_cols=num_cols, clf_output_col=clf_output_col, reg_output_col=reg_output_col):
         # 1. Impute numeric data (mean for continuous, median for categorical numerics)
-        self.mean_imputer = SimpleImputer(strategy="mean").set_output(transform="pandas")
         imputed_df = self.mean_imputer.fit_transform(df[input_cols])
 
         # 2. Normalize numeric data
-        self.scaler = StandardScaler().set_output(transform="pandas")
         scaled_df = self.scaler.fit_transform(imputed_df)
 
         # TO DO, Handle NaN Values
@@ -105,6 +105,14 @@ class Preprocessor:
 
         return X, y_clf, y_reg
 
+    def preprocess_predict(self,df):
+        #We don't drop the ID column on load so we want to drop it before preprocssing
+        df = df.drop(columns=["ID"], errors="ignore") 
+        imputed_df = self.mean_imputer.fit_transform(df)
+        scaled_df = self.scaler.fit_transform(imputed_df)
+        return scaled_df
+
+    
 # Example usage
 if __name__ == "__main__":
     # Define constants for column groups
