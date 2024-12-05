@@ -72,7 +72,7 @@ def predict(model,X_pred):
 if __name__ == '__main__':
     pp = Preprocessor()
 
-    doPrediction = True
+    doPrediction = False
 
     testData = pp.load("TestDatasetExample.xls",dropIDs = False)
     print(testData)
