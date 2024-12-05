@@ -17,3 +17,10 @@ class LinearRegression(RegressionModel):
 
     def test(self, X, y):
         return self.model.score(X, y)
+    
+
+    def predict(self,X):
+        return self.model.predict(X)
+        print(f"Prediction: {self.model.predict(X)}")
+        print(f"Prediction probability: {self.model.predict_proba}")
+
