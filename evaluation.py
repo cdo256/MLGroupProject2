@@ -72,6 +72,8 @@ def predict(model,X_pred):
 if __name__ == '__main__':
     pp = Preprocessor()
 
+    doPrediction = True
+
     testData = pp.load("TestDatasetExample.xls",dropIDs = False)
     print(testData)
     pptestData = pp.preprocess_predict(testData)
@@ -99,17 +101,16 @@ if __name__ == '__main__':
 
 
 
+    if doPrediction:
+        regPredict = predict(annReg,regData)
+        classPredict = predict(kerasClass,classData)
 
 
-    regPredict = predict(annReg,regData)
-    classPredict = predict(kerasClass,classData)
-
-    
-    dictRegPredict = {"ID": testData["ID"], "RelapseFreeSurvival": regPredict}
-    dictClassPredict = {"ID" : testData["ID"], "pCR (Predicted)": classPredict}
-    df_predictions = pd.DataFrame(dictRegPredict) 
-    df_predictions.to_csv("RFSPrediction.csv",index = False)
-    df_predictions = pd.DataFrame(dictClassPredict)
-    df_predictions.to_csv("PCRPrediction.csv",index = False)
-        
+        dictRegPredict = {"ID": testData["ID"], "RelapseFreeSurvival": regPredict}
+        dictClassPredict = {"ID" : testData["ID"], "pCR (Predicted)": classPredict}
+        df_predictions = pd.DataFrame(dictRegPredict) 
+        df_predictions.to_csv("RFSPrediction.csv",index = False)
+        df_predictions = pd.DataFrame(dictClassPredict)
+        df_predictions.to_csv("PCRPrediction.csv",index = False)
+            
 
