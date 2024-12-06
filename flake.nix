@@ -13,7 +13,7 @@
       in rec {
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
-            (python311.withPackages (ps: with ps; [
+            (python310.withPackages (ps: with ps; [
               numpy
               matplotlib
               scikit-learn
