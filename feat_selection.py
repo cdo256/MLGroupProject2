@@ -50,10 +50,23 @@ def t_test_feature_selection(X, y, threshold=0.05):
 
     for i in range(X.shape[1]):
         feature = X.iloc[:, i]
-
+        print("feature")
+        print(feature)
+        print(type(y))
+        print(y.shape)
+        if isinstance(y, pd.DataFrame):
+            y = y.squeeze()  # Converts to a Series
+        print(type(y))
+        print(y.shape)
         # Split data into two groups based on class
-        group1 = feature.loc[(y == classes[0]).index[((y == classes[0])[0])==True].tolist()]
-        group2 = feature.loc[(y == classes[0]).index[((y == classes[1])[0])==True].tolist()]
+        #group1 = feature.loc[(y == classes[0]).index[((y == classes[0])[0])==True].tolist()]
+        #group2 = feature.loc[(y == classes[0]).index[((y == classes[1])[0])==True].tolist()]
+        group1 = feature.loc[y.index[y == classes[0]]]  # Features corresponding to class 0
+        group2 = feature.loc[y.index[y == classes[1]]]  # Features corresponding to class 1
+        print("group1")
+        print(group1)
+        print("group2")
+        print(group2)
 
         # Perform t-test
         _, p_value = ttest_ind(group1, group2)

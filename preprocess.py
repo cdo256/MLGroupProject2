@@ -66,17 +66,20 @@ class Preprocessor:
 
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit([0.0, 1.0, float('nan')])
+        print(df[clf_output_col].unique())
         label_encoded_clf_np = self.label_encoder.transform(df[clf_output_col])
         #label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np, columns=[clf_output_col])
 
         label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np)
-
+        label_encoded_clf_df.to_excel("label_encoded_clf_df.xlsx", index=False)
         # Combine processed numeric and one-hot encoded data
         X = scaled_df
         # 4. Split output columns
         y_clf = label_encoded_clf_df 
-        y_reg = df[[reg_output_col]] if reg_output_col in df.columns else pd.DataFrame()
+        y_clf.columns = [clf_output_col]
 
+        y_reg = df[[reg_output_col]] if reg_output_col in df.columns else pd.DataFrame()
+        
         return X, y_clf, y_reg
 
     # Transform new data using the fitted parameters
@@ -141,7 +144,7 @@ if __name__ == "__main__":
 
     # Save preprocessed data
     preprocessed = pd.concat([X, y_clf, y_reg], axis=1)
-    preprocessed.to_excel("preprocessed.xlsx", index=False)
+    preprocessed.to_excel("preprocessed_test.xlsx", index=False)
 
     print("Preprocessing completed. Preprocessed data saved to 'preprocessed.xlsx'.")
     
@@ -195,3 +198,10 @@ if __name__ == "__main__":
 
 preprocess(file_name)
 '''
+
+
+
+
+# so target column for classification is processed using label encoder which means eventually there're 0,1,2 where 2 represents 999/nan
+# I believe we're achieving same goal as if  we use mean instead of label encoder
+# do we use LDA for classification and regression or only for classification?

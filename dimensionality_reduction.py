@@ -205,9 +205,12 @@ class PCAvsLDAComparison:
         #         df[column] = df[column].fillna(0).astype(int)  # Fill NaNs with 0 and convert to int
         #     except Exception as e:
         #         print(f"Skipping column {column}: {e}")
-        y = self.data[classifier]
-        X = self.data.drop([classifier], axis=1)
 
+        ## y = self.data[classifier]
+        y = self.target
+        ## X = self.data.drop([classifier], axis=1)
+        X = self.data
+        
         # Get the number of features in X
         top_n_features = X.shape[1]  # This will give the number of columns (features) in X
 

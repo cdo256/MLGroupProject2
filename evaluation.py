@@ -5,12 +5,9 @@ from preprocess import Preprocessor
 from sklearn.model_selection import train_test_split
 import feat_selection as fs
 from dimensionality_reduction import PCAvsLDAComparison
-
-
 from ann import ANNClassifier, ANNRegressor,KerasClassANN, KerasRegANN
 from BaseClasses import modelType
 from random_forest import RandomForestClassifierModel, RandomForestRegressorModel
-
 
 def init(toggle):
     global features, pp, base_df
@@ -28,11 +25,17 @@ def init(toggle):
     else:
         print("ERRROR")
 
-    print(f"Y Columns:\n{y.columns}")
-    #reducer = PCAvsLDAComparison(base_df, y, top_n_features) ### This does not work currently, related error - "Data needs to be imputed so there are no NAN values"
-    #best_df = reducer.main(y.columns[0])
-    #print(best_df)
+    print(f"y_reg:{y_reg}")
+    print(f"y_clf:{y_clf}")
+    print(f"Y Columns at init:\n{y.columns}")
+    print("test")
+    reducer = PCAvsLDAComparison(X, y, top_n_features)
+    ## reducer = PCAvsLDAComparison(base_df, y, top_n_features) ### This does not work currently, related error - "Data needs to be imputed so there are no NAN values"
+    best_df = reducer.main(y.columns[0])
+    print(best_df)
+
     features = fs.main(X, y, top_n_features, toggle)
+    print(f"features:{features}")
 
 # Perform cross-validation
 def evaluate(model, k, task):
@@ -86,10 +89,10 @@ if __name__ == '__main__':
     #evaluate(LinearRegression(), k=10, task=modelType.REGRESSION)
     evaluate(annReg,k = 10, task = modelType.REGRESSION)
     #evaluate(KerasRegANN(input_dim = len(features.columns),output_size = 1,hid_size = (100,100,100)),k = 10,task = modelType.REGRESSION)
-     # evaluate(RandomForestRegressorModel(), k=10, task=modelType.REGRESSION)
+    #evaluate(RandomForestRegressorModel(), k=10, task=modelType.REGRESSION)
 
 
-    
+'''  
     init(modelType.CLASSIFICATION)
     classData = pptestData[features.columns]
     #evaluate(LogisticRegression(max_iter=1000), k=10, task=modelType.CLASSIFICATION)
@@ -98,8 +101,9 @@ if __name__ == '__main__':
     #evaluate(ANNClassifier(random_state = 1, max_iter = 2000, hidden_layer_sizes = (50,)),k = 10, task = modelType.CLASSIFICATION)
     evaluate(kerasClass,k = 10,task = modelType.CLASSIFICATION)
     #evaluate(RandomForestClassifierModel(), k=10, task=modelType.CLASSIFICATION)
+'''
 
-
+'''
 
     if doPrediction:
         regPredict = predict(annReg,regData)
@@ -113,4 +117,4 @@ if __name__ == '__main__':
         df_predictions = pd.DataFrame(dictClassPredict)
         df_predictions.to_csv("PCRPrediction.csv",index = False)
             
-
+'''
