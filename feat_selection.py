@@ -227,7 +227,7 @@ def forward_selection(X, y, task, estimators=None, scoring=None, cv=5):
     - cv: Number of cross-validation folds (default: 5)
 
     Returns:
-    - selected_features: List of selected feature indices
+    - selected_features: List of selected feature names
     """
     # If no estimators are provided, use default models
     if estimators is None:
@@ -252,11 +252,11 @@ def forward_selection(X, y, task, estimators=None, scoring=None, cv=5):
     else:
         scoring_function = scoring  # Use the provided custom scoring function
 
-    remaining_features = list(range(X.shape[1]))
+    remaining_features = list(X.columns)  # Now a list of feature names (not indices)
     best_score = -float('inf')  # Start with a very low score
     last_best_score = -float('inf')  # Track the last best score to stop the process
     best_model = None
-    selected_features = []
+    selected_features = []  # List to store the names of the selected features
 
     # Dictionary to store performance of each model
     model_scores = defaultdict(list)
@@ -267,14 +267,17 @@ def forward_selection(X, y, task, estimators=None, scoring=None, cv=5):
 
         # Try adding each feature to the selected set and calculate score for each model
         for feature in remaining_features:
-            candidate_features = selected_features + [feature]
-            X_train_selected = X.iloc[:, candidate_features]
+            candidate_features = selected_features + [feature]  # Always work with feature names
+            X_train_selected = X[candidate_features]  # Using feature names here
+
             # Evaluate each model
             for estimator in estimators:
                 score = cross_val_score(estimator, X_train_selected, y, cv=cv, scoring='accuracy').mean()
+
                 # If using entropy, we need to invert the score (higher is better for entropy)
                 if scoring_function == compute_entropy:
                     score = -score  # Invert the accuracy score (higher is better for entropy)
+
                 scores_with_candidates.append((score, feature, estimator))
 
         # Sort and pick the best feature for the best model
@@ -284,18 +287,13 @@ def forward_selection(X, y, task, estimators=None, scoring=None, cv=5):
         # If the best score improves, keep the feature
         if best_score > last_best_score:  # Only keep the feature if it improves performance
             print(f"best score: {best_score}")
-            selected_features.append(best_feature)
-            remaining_features.remove(best_feature)
+            selected_features.append(best_feature)  # Append column name directly (not index)
+            remaining_features.remove(best_feature)  # Remove the selected feature from remaining list
             last_best_score = best_score  # Update last_best_score to the new best
             best_model = best_model_for_iteration  # Update best_model to the current best model
 
             # Print the name of the feature being added
-            if isinstance(X, pd.DataFrame):  # Check if X is a DataFrame
-                feature_name = X.columns[best_feature]
-            else:  # If X is a numpy array, use the index as feature name
-                feature_name = f"Feature_{best_feature}"
-
-            print(f"Added feature: {feature_name} | Score: {best_score:.4f} | Best Model: {best_model_for_iteration}")
+            print(f"Added feature: {best_feature} | Score: {best_score:.4f} | Best Model: {best_model_for_iteration}")
         else:
             break  # Stop if no improvement is made
 
@@ -305,13 +303,14 @@ def forward_selection(X, y, task, estimators=None, scoring=None, cv=5):
 
     return selected_features
 
-
 def evaluate_model(X_train, X_test, y_train, y_test, selected_features,task):
     # If selected_features contains names (strings), convert them to numeric indices
     if(len(selected_features) == 0):
         print("No features selected, skipping model evaluation")
         return 0
-    if isinstance(selected_features[0], str):  # Check if the selected features are names
+    # Check if selected_features is a list of feature names (strings)
+    if isinstance(selected_features[0], str):
+        # If the selected features are names (strings), convert to column indices
         selected_features = [X_train.columns.get_loc(col_name) for col_name in selected_features]
 
     # Now select the features from the original dataset using numeric indices
@@ -337,17 +336,28 @@ def evaluate_model(X_train, X_test, y_train, y_test, selected_features,task):
 
     return accuracy
 
-def main(X, y, top_n_features, classifier):
-    # Print and compare results
+def main(X, y, top_n_features, classifier, retained_features=None):
+    """
+    Main function to evaluate feature selection methods and return the top selected features.
+
+    Args:
+        X (DataFrame): The feature set (input data).
+        y (Series): The target variable (output data).
+        top_n_features (int): Number of top features to select.
+        classifier (str): The type of model ('regression' or 'classification').
+        retained_features (list): A list of features to retain during the process (optional).
+
+    Returns:
+        DataFrame: A DataFrame containing the top selected features.
+    """
 
     print("Comparison of Feature Selection Methods:\n")
+
     # Split data into train and test sets
-    X_train, X_test, y_train, y_test, = \
-        train_test_split(X, y, test_size=0.3, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
     # Compare the feature selection methods
     methods = [
-        # task, method
         (classifier, fsMethod.ANOVA),
         (classifier, fsMethod.RFE),
         (classifier, fsMethod.FORWARD),
@@ -362,42 +372,35 @@ def main(X, y, top_n_features, classifier):
     # Dictionary from methods to (accuracy, features)
     results = {}
 
-    selected_features_dict = {}
     best_method = None
     best_accuracy = -float('inf')  # Start with a very low accuracy
 
-    # Dictionary to store feature selection and accuracy from all methods
-    method_accuracies = {}
-
     # Perform feature selection using each method and store the accuracies and selected features
     for classifier, method in methods:
-        # if classifier == "clf":
-        #     task = "pCR (outcome)"
-        # elif classifier == "reg":
-        #     task = "RelapseFreeSurvival (outcome)"
-
-
         print(f'task,method: {classifier, method}')
+
         match(method):
             case fsMethod.T_TEST:
                 selected_features = t_test_feature_selection(X_train, y_train)
             case fsMethod.ANOVA:
-                selected_features = anova_feature_selection(X_train, y_train,classifier,top_n_features)
+                selected_features = anova_feature_selection(X_train, y_train, classifier, top_n_features)
             case fsMethod.CHISQUARE:
-                selected_features = chi_square_feature_selection(X_train, y_train,top_n_features)
+                selected_features = chi_square_feature_selection(X_train, y_train, top_n_features)
             case fsMethod.RFE:
-                selected_features = rfe_wrapper(X_train, y_train, top_n_features,classifier)
+                selected_features = rfe_wrapper(X_train, y_train, top_n_features, classifier)
             case fsMethod.LASSO:
                 selected_features = lasso_feature_selection(X_train, y_train)
             case fsMethod.FORWARD:
-                selected_features = forward_selection(X_train, y_train,classifier, scoring="entropy")
+                selected_features = forward_selection(X_train, y_train, classifier, scoring="entropy")
             case _:
                 print("Method not detected")
                 continue
 
+        if retained_features:
+            selected_features  = np.concatenate([selected_features,retained_features])
 
-        # Evaluate model performance with the selected feature
-        accuracy = evaluate_model(X_train, X_test, y_train, y_test, selected_features,classifier)
+        # Evaluate model performance with the selected features
+        accuracy = evaluate_model(X_train, X_test, y_train, y_test, selected_features, classifier)
 
         # Store the method's accuracy
         results[(classifier, method)] = (accuracy, selected_features)
@@ -441,23 +444,3 @@ def main(X, y, top_n_features, classifier):
     top_selected_df = pd.concat([X[top_selected_features]], axis=1)
 
     return top_selected_df
-
-# if __name__ == '__main__':
-#     pp = Preprocessor()
-#     input_filename = "TrainDataset2024.xls"
-#     output_filename = "TrainDataset2024.csv"
-#     n = 10
-#     base_df = pp.load(input_filename)
-#     X_input, y_clf, y_reg = pp.preprocess_fit(base_df)
-#     print(y_clf)
-#     features = main(X_input, y_clf, y_reg, n)
-#     print(f'Selecing features {features}')
-#     output_df = pd.concat(base_df[features], y_clf, y_reg)
-
-#     # Output the new DataFrame with top selected features
-#     print(f"\nNew DataFrame with top {n} selected features:")
-#     print(output_df.head())  # Show first few rows of the new DataFrame
-
-#     # Optionally, create csv
-#     output_df.to_csv(output_filename)
-#     print(f'Written output to {output_filename}')
