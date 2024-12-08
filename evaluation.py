@@ -4,11 +4,10 @@ from logistic_regression import LogisticRegression
 from preprocess import Preprocessor
 from sklearn.model_selection import train_test_split
 import feat_selection as fs
-
+from sklearn.model_selection import KFold
 from ann import ANNClassifier, ANNRegressor,KerasClassANN, KerasRegANN
 from BaseClasses import modelType
 from random_forest import RandomForestClassifierModel, RandomForestRegressorModel
-
 
 def init(toggle):
     global features, pp, base_df, retained_features
@@ -35,17 +34,17 @@ def init(toggle):
 
 # Perform cross-validation
 def evaluate(model, k, task):
-    global features, pp, base_df, retained_features
+    global features, pp, base_df
     print(f'{model}:')
 
-    # Shuffle by sampling all the data and drop the original indexes.
-    shuffled_df = base_df.sample(frac=1.0).reset_index(drop=True)
-    shuffled_df['fold'] = shuffled_df.index % k
-    folds = [fold_df for _, fold_df in shuffled_df.groupby('fold')]
-    for test_fold in range(k):
-        # leave out fold with index `test_fold`
-        test_df = folds[test_fold]
-        train_df = pd.concat([folds[i] for i in range(k) if i != test_fold])
+    # KFold cross-validation
+    kf = KFold(n_splits=k, shuffle=True, random_state=42)
+
+    # Process each fold
+    for train_index, test_index in kf.split(base_df):
+        # Split data into training and testing sets
+        train_df = base_df.iloc[train_index]
+        test_df = base_df.iloc[test_index]
         y_train = {}
         y_test = {}
         X_train_full, y_train[modelType.CLASSIFICATION] , y_train[modelType.REGRESSION] = pp.preprocess_fit(train_df)
@@ -61,7 +60,6 @@ def evaluate(model, k, task):
 def predict(model,X_pred):
     predictions = model.predict(X_pred)
     return predictions
-
 
 if __name__ == '__main__':
     pp = Preprocessor()
