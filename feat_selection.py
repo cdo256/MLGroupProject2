@@ -93,7 +93,7 @@ def lasso_feature_selection(X, y, alpha=0.1):
 
     return selected_features
 
-def rfe_wrapper(X, y, top_n_features,task, estimator=None, step=1):
+def rfe_wrapper(X, y, top_n_features, task, estimator=None, step=1):
     """
     Perform feature selection using a wrapper method (RFE).
 
@@ -109,12 +109,13 @@ def rfe_wrapper(X, y, top_n_features,task, estimator=None, step=1):
     """
     # Default estimator if not provided
     if estimator is None:
-        if(task == modelType.CLASSIFICATION):
-            estimator = RandomForestClassifier(n_estimators=100, random_state=42)
-        elif (task == modelType.REGRESSION):
-            estimator = RandomForestRegressor(n_estimators=100, random_state=42)
-        else:
-            print("RFE task error")
+        match task:
+            case modelType.CLASSIFICATION:
+                estimator = RandomForestClassifier(n_estimators=100, random_state=42)
+            case modelType.REGRESSION:
+                estimator = RandomForestRegressor(n_estimators=100, random_state=42)
+            case _:
+                raise ValueError('Invalid task')
 
     # Initialize the RFE model
     selector = RFE(estimator, n_features_to_select=top_n_features, step=step)
@@ -146,27 +147,30 @@ def anova_feature_selection(X, y,task,top_n_features, threshold=0.05):
     print(f"task:{task}")
 
 
-    if(task == modelType.CLASSIFICATION):
-        # Perform ANOVA F-test (f_classif)
-        f_values, p_values = f_classif(X, y)
+    match task:
+        case modelType.CLASSIFICATION:
+            # Perform ANOVA F-test (f_classif)
+            f_values, p_values = f_classif(X, y)
 
-        print("Feature Scores (F-values):")
-        for i, f_val in enumerate(f_values):
-            print(f"Feature {X.columns[i]}: F-value = {f_val:.4f}, p-value = {p_values[i]:.4f}")
+            print("Feature Scores (F-values):")
+            for i, f_val in enumerate(f_values):
+                print(f"Feature {X.columns[i]}: F-value = {f_val:.4f}, p-value = {p_values[i]:.4f}")
 
-        # Select features with p-value less than threshold
-        selected_features = [X.columns[i] for i in range(len(p_values)) if p_values[i] < threshold]
+            # Select features with p-value less than threshold
+            selected_features = [X.columns[i] for i in range(len(p_values)) if p_values[i] < threshold]
 
-        #print("\nSelected Features (based on p-value < threshold):")
-        #print(selected_features)
+            #print("\nSelected Features (based on p-value < threshold):")
+            #print(selected_features)
 
-        selector = SelectKBest(f_classif, k = top_n_features)
-        selector.fit_transform(X,y)
-        selected_features = selector.get_feature_names_out()
-    elif(task == modelType.REGRESSION):
-        selector = SelectKBest(f_regression, k = top_n_features)
-        selector.fit_transform(X,y)
-        selected_features = selector.get_feature_names_out()
+            selector = SelectKBest(f_classif, k = top_n_features)
+            selector.fit_transform(X,y)
+            selected_features = selector.get_feature_names_out()
+        case modelType.REGRESSION:
+            selector = SelectKBest(f_regression, k = top_n_features)
+            selector.fit_transform(X,y)
+            selected_features = selector.get_feature_names_out()
+        case _:
+            raise ValueError('Invalid task')
 
 
     return selected_features
@@ -231,18 +235,21 @@ def forward_selection(X, y, task, estimators=None, scoring=None, cv=5):
     """
     # If no estimators are provided, use default models
     if estimators is None:
-        if(task == modelType.CLASSIFICATION):
-            estimators = [
-                LogisticRegression(solver='liblinear'),
-                RandomForestClassifier(),
-                DecisionTreeClassifier()
-            ]
-        elif(task == modelType.REGRESSION):
-            estimators = [
-                LinearRegression(),
-                RandomForestRegressor(),
-                DecisionTreeRegressor()
-            ]
+        match task:
+            case modelType.CLASSIFICATION:
+                estimators = [
+                    LogisticRegression(solver='liblinear'),
+                    RandomForestClassifier(),
+                    DecisionTreeClassifier()
+                ]
+            case modelType.REGRESSION:
+                estimators = [
+                    LinearRegression(),
+                    RandomForestRegressor(),
+                    DecisionTreeRegressor()
+                ]
+            case _:
+                raise ValueError('Invalid task')
 
     # Set scoring function based on the user's choice
     if scoring == 'entropy':
@@ -319,25 +326,28 @@ def evaluate_model(X_train, X_test, y_train, y_test, selected_features,task):
     X_test_selected = X_test.iloc[:, selected_features]
 
 
-    if(task == modelType.CLASSIFICATION):
-        model = LogisticRegression(max_iter=200)
-        model.fit(X_train_selected, y_train)
-         # Predict on the test set
-        y_pred = model.predict(X_test_selected)
-        # Evaluate the model accuracy
-        accuracy = accuracy_score(y_test, y_pred)
-    elif(task == modelType.REGRESSION):
-        model = LinearRegression()
-        model.fit(X_train_selected, y_train)
-         # Predict on the test set
-        y_pred = model.predict(X_test_selected)
-        # Evaluate the model accuracy
-        accuracy = model.score(X_test_selected, y_test)
+    match task:
+        case modelType.CLASSIFICATION:
+            model = LogisticRegression(max_iter=200)
+            model.fit(X_train_selected, y_train)
+            # Predict on the test set
+            y_pred = model.predict(X_test_selected)
+            # Evaluate the model accuracy
+            accuracy = accuracy_score(y_test, y_pred)
+        case modelType.REGRESSION:
+            model = LinearRegression()
+            model.fit(X_train_selected, y_train)
+            # Predict on the test set
+            y_pred = model.predict(X_test_selected)
+            # Evaluate the model accuracy
+            accuracy = model.score(X_test_selected, y_test)
+        case _:
+            raise ValueError('Invalid task')
         
 
     return accuracy
 
-def main(X, y, top_n_features, classifier):
+def main(X, y, top_n_features, task):
     # Print and compare results
 
     print("Comparison of Feature Selection Methods:\n")
@@ -348,16 +358,19 @@ def main(X, y, top_n_features, classifier):
     # Compare the feature selection methods
     methods = [
         # task, method
-        (classifier, fsMethod.ANOVA),
-        (classifier, fsMethod.RFE),
-        (classifier, fsMethod.FORWARD),
+        (task, fsMethod.ANOVA),
+        (task, fsMethod.RFE),
+        (task, fsMethod.FORWARD),
     ]
 
-    if classifier == modelType.REGRESSION:
-        methods.append((classifier, fsMethod.LASSO))
-    elif classifier == modelType.CLASSIFICATION:
-        methods.append((classifier, fsMethod.T_TEST))
-        methods.append((classifier, fsMethod.CHISQUARE))
+    match task:
+        case modelType.REGRESSION:
+            methods.append((task, fsMethod.LASSO))
+        case modelType.CLASSIFICATION:
+            methods.append((task, fsMethod.T_TEST))
+            methods.append((task, fsMethod.CHISQUARE))
+        case _:
+            raise ValueError('Invalid task')
 
     # Dictionary from methods to (accuracy, features)
     results = {}
@@ -370,37 +383,33 @@ def main(X, y, top_n_features, classifier):
     method_accuracies = {}
 
     # Perform feature selection using each method and store the accuracies and selected features
-    for classifier, method in methods:
-        # if classifier == "clf":
-        #     task = "pCR (outcome)"
-        # elif classifier == "reg":
-        #     task = "RelapseFreeSurvival (outcome)"
+    for t, method in methods:
+        # Only use methods that apply to the current task
+        if t != task:
+            continue
 
-
-        print(f'task,method: {classifier, method}')
+        print(f'task, method: {t, method}')
         match(method):
             case fsMethod.T_TEST:
                 selected_features = t_test_feature_selection(X_train, y_train)
             case fsMethod.ANOVA:
-                selected_features = anova_feature_selection(X_train, y_train,classifier,top_n_features)
+                selected_features = anova_feature_selection(X_train, y_train, t, top_n_features)
             case fsMethod.CHISQUARE:
                 selected_features = chi_square_feature_selection(X_train, y_train,top_n_features)
             case fsMethod.RFE:
-                selected_features = rfe_wrapper(X_train, y_train, top_n_features,classifier)
+                selected_features = rfe_wrapper(X_train, y_train, top_n_features, t)
             case fsMethod.LASSO:
                 selected_features = lasso_feature_selection(X_train, y_train)
             case fsMethod.FORWARD:
-                selected_features = forward_selection(X_train, y_train,classifier, scoring="entropy")
+                selected_features = forward_selection(X_train, y_train, t, scoring="entropy")
             case _:
-                print("Method not detected")
-                continue
-
+                raise ValueError('Invalid feature selction method')
 
         # Evaluate model performance with the selected feature
-        accuracy = evaluate_model(X_train, X_test, y_train, y_test, selected_features,classifier)
+        accuracy = evaluate_model(X_train, X_test, y_train, y_test, selected_features, t)
 
         # Store the method's accuracy
-        results[(classifier, method)] = (accuracy, selected_features)
+        results[(t, method)] = (accuracy, selected_features)
 
         # Print results
         print(f"{method}:")
@@ -411,7 +420,7 @@ def main(X, y, top_n_features, classifier):
         # Update best performing method if necessary
         if accuracy > best_accuracy:
             best_accuracy = accuracy
-            best_method = (classifier, method)
+            best_method = (t, method)
 
     # After evaluating all methods, find the top-performing features across all methods
     all_selected_features = []
@@ -437,27 +446,4 @@ def main(X, y, top_n_features, classifier):
     print(f"\nTop {top_n_features} selected features from all methods:")
     print(f"  {top_selected_features}")
 
-    # Combine the top selected features from X with y (target variable)
-    top_selected_df = pd.concat([X[top_selected_features]], axis=1)
-
-    return top_selected_df
-
-# if __name__ == '__main__':
-#     pp = Preprocessor()
-#     input_filename = "TrainDataset2024.xls"
-#     output_filename = "TrainDataset2024.csv"
-#     n = 10
-#     base_df = pp.load(input_filename)
-#     X_input, y_clf, y_reg = pp.preprocess_fit(base_df)
-#     print(y_clf)
-#     features = main(X_input, y_clf, y_reg, n)
-#     print(f'Selecing features {features}')
-#     output_df = pd.concat(base_df[features], y_clf, y_reg)
-
-#     # Output the new DataFrame with top selected features
-#     print(f"\nNew DataFrame with top {n} selected features:")
-#     print(output_df.head())  # Show first few rows of the new DataFrame
-
-#     # Optionally, create csv
-#     output_df.to_csv(output_filename)
-#     print(f'Written output to {output_filename}')
+    return top_selected_features
