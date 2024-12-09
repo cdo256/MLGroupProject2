@@ -29,6 +29,12 @@ class fsMethod(Enum):
     T_TEST = 4,
     CHISQUARE = 5
 
+verbose = False
+
+def debug_print(*args, **kwargs):
+    if verbose:
+        print(*args, **kwargs)
+
 def t_test_feature_selection(X, y, threshold=0.05):
     """
     Perform t-test for feature selection (binary classification).
@@ -61,7 +67,7 @@ def t_test_feature_selection(X, y, threshold=0.05):
         # If the p-value is less than the threshold, select the feature
         if p_value < threshold:
             selected_features.append(X.columns[i])  # Use the column name
-            print(f"Feature: {X.columns[i]} which has a p-value: {p_value} for t-test")
+            debug_print(f"Feature: {X.columns[i]} which has a p-value: {p_value} for t-test")
 
     return selected_features
 
@@ -88,8 +94,8 @@ def lasso_feature_selection(X, y, alpha=0.1):
     # Get the coefficients of the model (those close to zero are eliminated)
     selected_features = X.columns[lasso.coef_ != 0].tolist()
 
-    print(f"Selected Features (names): {selected_features}")
-    print(f"Lasso Coefficients: {lasso.coef_}")
+    debug_print(f"Selected Features (names): {selected_features}")
+    debug_print(f"Lasso Coefficients: {lasso.coef_}")
 
     return selected_features
 
@@ -126,7 +132,7 @@ def rfe_wrapper(X, y, top_n_features, task, estimator=None, step=1):
     # Get the mask of the best selected features
     selected_features = X.columns[selector.support_].tolist()
 
-    print(f"Selected Features: {selected_features}")
+    debug_print(f"Selected Features: {selected_features}")
 
     return selected_features
 
@@ -144,7 +150,7 @@ def anova_feature_selection(X, y,task,top_n_features, threshold=0.05):
     - selected_features: List of feature names of selected features
     """
 
-    print(f"task:{task}")
+    debug_print(f"task:{task}")
 
 
     match task:
@@ -152,15 +158,15 @@ def anova_feature_selection(X, y,task,top_n_features, threshold=0.05):
             # Perform ANOVA F-test (f_classif)
             f_values, p_values = f_classif(X, y)
 
-            print("Feature Scores (F-values):")
+            debug_print("Feature Scores (F-values):")
             for i, f_val in enumerate(f_values):
-                print(f"Feature {X.columns[i]}: F-value = {f_val:.4f}, p-value = {p_values[i]:.4f}")
+                debug_print(f"Feature {X.columns[i]}: F-value = {f_val:.4f}, p-value = {p_values[i]:.4f}")
 
             # Select features with p-value less than threshold
             selected_features = [X.columns[i] for i in range(len(p_values)) if p_values[i] < threshold]
 
-            #print("\nSelected Features (based on p-value < threshold):")
-            #print(selected_features)
+            #debug_print("\nSelected Features (based on p-value < threshold):")
+            #debug_print(selected_features)
 
             selector = SelectKBest(f_classif, k = top_n_features)
             selector.fit_transform(X,y)
@@ -200,7 +206,7 @@ def chi_square_feature_selection(X, y,top_n_features, threshold=0.05):
 
     # for i in range(len(p_values)):
     #     if p_values[i] < threshold:
-    #         print(f"Selected feature: {X.columns[i]}, p-value: {p_values[i]:.4f}")
+    #         debug_print(f"Selected feature: {X.columns[i]}, p-value: {p_values[i]:.4f}")
 
     return chi2_selector.get_feature_names_out()
 
@@ -290,25 +296,25 @@ def forward_selection(X, y, task, estimators=None, scoring=None, cv=5):
 
         # If the best score improves, keep the feature
         if best_score > last_best_score:  # Only keep the feature if it improves performance
-            print(f"best score: {best_score}")
+            debug_print(f"best score: {best_score}")
             selected_features.append(best_feature)
             remaining_features.remove(best_feature)
             last_best_score = best_score  # Update last_best_score to the new best
             best_model = best_model_for_iteration  # Update best_model to the current best model
 
-            # Print the name of the feature being added
+            # debug_print the name of the feature being added
             if isinstance(X, pd.DataFrame):  # Check if X is a DataFrame
                 feature_name = X.columns[best_feature]
             else:  # If X is a numpy array, use the index as feature name
                 feature_name = f"Feature_{best_feature}"
 
-            print(f"Added feature: {feature_name} | Score: {best_score:.4f} | Best Model: {best_model_for_iteration}")
+            debug_print(f"Added feature: {feature_name} | Score: {best_score:.4f} | Best Model: {best_model_for_iteration}")
         else:
             break  # Stop if no improvement is made
 
     # Print the results
-    print("Selected Features:", selected_features)
-    print("Best Model:", best_model)
+    debug_print("Selected Features:", selected_features)
+    debug_print("Best Model:", best_model)
 
     return selected_features
 
@@ -316,7 +322,7 @@ def forward_selection(X, y, task, estimators=None, scoring=None, cv=5):
 def evaluate_model(X_train, X_test, y_train, y_test, selected_features,task):
     # If selected_features contains names (strings), convert them to numeric indices
     if(len(selected_features) == 0):
-        print("No features selected, skipping model evaluation")
+        debug_print("No features selected, skipping model evaluation")
         return 0
     if isinstance(selected_features[0], str):  # Check if the selected features are names
         selected_features = [X_train.columns.get_loc(col_name) for col_name in selected_features]
@@ -350,7 +356,7 @@ def evaluate_model(X_train, X_test, y_train, y_test, selected_features,task):
 def main(X, y, top_n_features, task):
     # Print and compare results
 
-    print("Comparison of Feature Selection Methods:\n")
+    debug_print("Comparison of Feature Selection Methods:\n")
     # Split data into train and test sets
     X_train, X_test, y_train, y_test, = \
         train_test_split(X, y, test_size=0.3, random_state=42)
@@ -388,8 +394,8 @@ def main(X, y, top_n_features, task):
         if t != task:
             continue
 
-        print(f'task, method: {t, method}')
-        match(method):
+        print(f'Running task, method: {t.name, method.name}')
+        match method:
             case fsMethod.T_TEST:
                 selected_features = t_test_feature_selection(X_train, y_train)
             case fsMethod.ANOVA:
@@ -412,10 +418,10 @@ def main(X, y, top_n_features, task):
         results[(t, method)] = (accuracy, selected_features)
 
         # Print results
-        print(f"{method}:")
-        print(f"  Selected features: {selected_features}")
-        print(f"  Number of selected features: {len(selected_features)}")
-        print(f"  Model accuracy: {accuracy:.4f}\n")
+        debug_print(f"{method}:")
+        debug_print(f"  Selected features: {selected_features}")
+        debug_print(f"  Number of selected features: {len(selected_features)}")
+        debug_print(f"  Model accuracy: {accuracy:.4f}\n")
 
         # Update best performing method if necessary
         if accuracy > best_accuracy:
