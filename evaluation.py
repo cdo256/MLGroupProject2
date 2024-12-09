@@ -11,6 +11,24 @@ from ann import ANNClassifier, ANNRegressor,KerasClassANN, KerasRegANN
 from BaseClasses import modelType
 from random_forest import RandomForestClassifierModel, RandomForestRegressorModel
 
+enable_feature_selection = True
+load_features = True
+save_features = True
+
+def write_features(features, filename):
+    with open(filename, 'w') as file:
+        for feature in features:
+            print(feature, file=file)
+
+def read_features(filename):
+    features = []
+    try:
+        with open(filename) as file:
+            for line in file.readlines():
+                features.append(line.strip())
+        return features
+    except FileNotFoundError:
+        return None
 
 def init(task):
     global features, pp, base_df
@@ -27,19 +45,33 @@ def init(task):
     match task:
         case modelType.REGRESSION:
             y = y_reg
+            filename = 'features-reg.txt'
         case modelType.CLASSIFICATION:
             y = y_clf
+            filename = 'features-clf.txt'
         case _:
             raise ValueError('Invalid task')
 
-    print(f"Y Columns:\n{y.columns}")
+    #print(f"Y Columns:\n{y.columns}")
     #reducer = PCAvsLDAComparison(base_df, y, top_n_features) ### This does not work currently, related error - "Data needs to be imputed so there are no NAN values"
     #best_df = reducer.main(y.columns[0])
     #print(best_df)
-    features = fs.main(X, y, top_n_features, task)
+
+    if load_features:
+        print(f'Loading features from {filename}...')
+        features = read_features(filename)
+        if features is None:
+            print(f'Warning: Loading features failed')
+    if features is None:
+        print(f'Generating features...')
+        features = fs.main(X, y, top_n_features, task)
+        if save_features:
+            print('Saving features...')
+            write_features(features, filename)
+    print(features)
 
 # Perform cross-validation
-def evaluate(model, k, task):
+def evaluate(model, k, task, param_search=False):
     global features, pp, base_df
     print(f'{model}:')
 
@@ -59,6 +91,9 @@ def evaluate(model, k, task):
         X_test_full, y_test[modelType.CLASSIFICATION], y_test[modelType.REGRESSION] = pp.preprocess_transform(test_df)
         X_train = X_train_full[features]
         X_test = X_test_full[features]
+
+        if param_search:
+            model.param_search(X_train, y_train)
 
         train_accuracy = model.train(X_train, y_train[task])
         test_accuracy = model.test(X_test, y_test[task])
