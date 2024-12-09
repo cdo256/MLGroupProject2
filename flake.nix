@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/23.11";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -25,6 +25,7 @@
               xlrd
               openpyxl
               keras
+              tensorflow
             ]))
             git
           ];
