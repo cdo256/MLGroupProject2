@@ -1,11 +1,9 @@
 import pandas as pd
 from linear_regression import LinearRegression
 from logistic_regression import LogisticRegression
-from preprocess import Preprocessor
+from preprocess import Preprocessor, clf_output_col, reg_output_col
 from sklearn.model_selection import train_test_split
 import feat_selection as fs
-from dimensionality_reduction import PCAvsLDAComparison
-
 
 from ann import ANNClassifier, ANNRegressor,KerasClassANN, KerasRegANN
 from BaseClasses import modelType
@@ -14,6 +12,7 @@ from random_forest import RandomForestClassifierModel, RandomForestRegressorMode
 enable_feature_selection = True
 load_features = True
 save_features = True
+do_prediction = False
 
 def write_features(features, filename):
     with open(filename, 'w') as file:
@@ -31,7 +30,7 @@ def read_features(filename):
         return None
 
 def init(task):
-    global features, pp, base_df
+    global features, pp, base_df, retained_features
 
     # Here we want to preprocess the train data first then use the same parameters for the test data.
     # To do this we will use the class Preprocessor which is to be implemented.
@@ -39,7 +38,6 @@ def init(task):
     top_n_features = 10
     pp = Preprocessor()
     base_df = pp.load('TrainDataset2024.xls')
-
     X, y_clf, y_reg = pp.preprocess_fit(base_df)
 
     match task:
@@ -56,6 +54,7 @@ def init(task):
     #reducer = PCAvsLDAComparison(base_df, y, top_n_features) ### This does not work currently, related error - "Data needs to be imputed so there are no NAN values"
     #best_df = reducer.main(y.columns[0])
     #print(best_df)
+    retained_features = ['PgR', 'Gene', 'HER2']
 
     if load_features:
         print(f'Loading features from {filename}...')
@@ -64,25 +63,35 @@ def init(task):
             print(f'Warning: Loading features failed')
     if features is None:
         print(f'Generating features...')
-        features = fs.main(X, y, top_n_features, task)
+        features = fs.main(X, y, top_n_features, task, retained_features=retained_features)
         if save_features:
             print('Saving features...')
             write_features(features, filename)
-    print(features)
+    return X[features], y
 
 # Perform cross-validation
 def evaluate(model, k, task, param_search=False):
-    global features, pp, base_df
+    global features, pp, base_df, retained_features
     print(f'{model}:')
 
-    # Shuffle by sampling all the data and drop the original indexes.
+   # Shuffle by sampling all the data and drop the original indexes.
     shuffled_df = base_df.sample(frac=1.0).reset_index(drop=True)
-    # Assign a fold based on the new shuffled indexes
-    shuffled_df['fold'] = shuffled_df.index % k
-    # folds is a list of k groups of roughly equal size
+    shuffled_df['fold'] = shuffled_df.index % k   
+    
+    pp = Preprocessor()
+
+    doPrediction = False
+
+    testData = pp.load("TestDatasetExample.xls",dropIDs = False)
+    print(testData)
+    pptestData     = pp.preprocess_predict(testData)
+
+    # annReg = ANNRegressor(random_state = 1, max_iter = 5000)
+    #
+    # init
     folds = [fold_df for _, fold_df in shuffled_df.groupby('fold')]
     for test_fold in range(k):
-        # leave out fold with index `test_fold` 
+        # leave out fold with index `test_fold`
         test_df = folds[test_fold]
         train_df = pd.concat([folds[i] for i in range(k) if i != test_fold])
         y_train = {}
@@ -99,15 +108,66 @@ def evaluate(model, k, task, param_search=False):
         test_accuracy = model.test(X_test, y_test[task])
         print(f'{train_accuracy:.03}, {test_accuracy:.03}')
 
-if __name__ == '__main__':
-    init(modelType.REGRESSION)
-    evaluate(LinearRegression(), k=10, task=modelType.REGRESSION)
-    evaluate(ANNRegressor(random_state = 1, max_iter = 5000),k = 10, task = modelType.REGRESSION)
-    evaluate(KerasRegANN(input_dim = len(features),output_size = 1,hid_size = (100,100,100)),k = 10,task = modelType.REGRESSION)
-    evaluate(RandomForestRegressorModel(), k=10, task=modelType.REGRESSION)
+#Returns a numpy array of the predictions for the model that was passed in
+def predict(model,X_pred):
+    predictions = model.predict(X_pred)
+    return predictions
 
-    init(modelType.CLASSIFICATION)
-    evaluate(LogisticRegression(max_iter=1000), k=10, task=modelType.CLASSIFICATION)
-    evaluate(ANNClassifier(random_state = 1, max_iter = 2000),k = 10, task = modelType.CLASSIFICATION)
-    evaluate(KerasClassANN(input_dim = len(features),output_size = 1,hid_size = (100,100,100)),k = 10,task = modelType.CLASSIFICATION)
-    evaluate(RandomForestClassifierModel(), k=10, task=modelType.CLASSIFICATION)
+def get_models(features):
+    return {
+        'LinearRegression': (modelType.REGRESSION, LinearRegression()),
+        'ANNRegressor': (modelType.REGRESSION, ANNRegressor(random_state = 1, max_iter = 5000)),
+        'KerasRegANN': (modelType.REGRESSION, KerasRegANN(input_dim = len(features),output_size = 1,hid_size = (100,100,100))), 
+        'RandomForestRegressorModel': (modelType.REGRESSION, RandomForestRegressorModel()), 
+        'LogisticRegression': (modelType.CLASSIFICATION, LogisticRegression(max_iter=1000)), 
+        'ANNClassifier': (modelType.CLASSIFICATION, ANNClassifier(random_state = 1, max_iter = 2000)), 
+        'KerasClassANN': (modelType.CLASSIFICATION, KerasClassANN(input_dim = len(features),output_size = 1,hid_size = (100,100,100))), 
+        'RandomForestClassifierModel': (modelType.CLASSIFICATION, RandomForestClassifierModel()),
+    }
+
+if __name__ == '__main__':
+    mode = 'predict'
+    match mode:
+        case 'predict':
+            predictions = {}
+            for task in modelType:
+                X_train, y_train = init(task)
+                models = get_models(features)
+                match task:
+                    case modelType.REGRESSION:
+                        _, model = models['ANNRegressor']
+                    case modelType.CLASSIFICATION:
+                        _, model = models['KerasClassANN']
+                    case _:
+                        raise ValueError('Invalid model type')
+                test_df = pp.load('TestDatasetExample.xls', dropIDs=False)
+                X_test = pp.preprocess_transform(test_df, include_output=False)
+                X_test = X_test[features]
+                print('train cols', X_train.columns)
+                print('test cols', X_test.columns)
+                model.train(X_train, y_train)
+                predictions[task] = model.predict(X_test)
+                print(predictions[task])
+                match task:
+                    case modelType.REGRESSION:
+                        output_label = reg_output_col
+                    case modelType.CLASSIFICATION:
+                        output_label = clf_output_col
+                    case _:
+                        raise ValueError('Invalid model type')
+            dictPredict = {
+                'ID': test_df['ID'],
+                reg_output_col: predictions[modelType.REGRESSION],
+                clf_output_col: predictions[modelType.CLASSIFICATION],
+            }
+            df_predictions = pd.DataFrame(dictPredict) 
+            print('Writing predictions to Predictions.csv')
+            df_predictions.to_csv("Predictions.csv", index = False)
+        case 'evaluate':
+            for task in modelType:
+                X, y = init(modelType.REGRESSION)
+                models = get_models(features)
+                for t, model in models.values():
+                    if t != task:
+                        continue
+                    evaluate(model, k=10, task=task)

@@ -30,57 +30,47 @@ num_cols = [col for col in all_df.columns if col not in cat_cols and col not in 
 class Preprocessor:
     def __init__(self):
         # Initialize transformers to be used in the pipeline
-        self.mean_imputer = None
-        self.median_imputer = None
-        self.scaler = None
+        self.mean_imputer = SimpleImputer(strategy="mean").set_output(transform="pandas")
+        self.scaler = StandardScaler().set_output(transform="pandas")
         self.one_hot_encoder = None
 
     # Method to load the dataset
-    def load(self, filename):
+    def load(self, filename, dropIDs = True):
         df = pd.read_excel(filename)
         df.replace(999, np.nan, inplace=True)  # Replace 999 with NaN
-        df = df.drop(columns=["ID"], errors="ignore")  # Drop the ID column if it exists
+        if dropIDs:
+            df = df.drop(columns=["ID"], errors="ignore")  # Drop the ID column if it exists
         return df
 
+    
+
     # Fit and transform the data for pre-processing
-    def preprocess_fit(self, df, cat_cols=cat_cols, num_cols=num_cols, clf_output_col=clf_output_col, reg_output_col=reg_output_col):
+    def preprocess_fit(self, df, cat_cols=cat_cols, num_cols=num_cols, clf_output_col=clf_output_col, reg_output_col=reg_output_col, include_output=True):
         # 1. Impute numeric data (mean for continuous, median for categorical numerics)
-        self.mean_imputer = SimpleImputer(strategy="mean").set_output(transform="pandas")
         imputed_df = self.mean_imputer.fit_transform(df[input_cols])
 
         # 2. Normalize numeric data
-        self.scaler = StandardScaler().set_output(transform="pandas")
         scaled_df = self.scaler.fit_transform(imputed_df)
-
-        # TO DO, Handle NaN Values
-
-
-        # 3. One-hot encode categorical data
-        #self.one_hot_encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False).set_output(transform='pandas')
-        #hot_encoded = self.one_hot_encoder.fit_transform(df[cat_cols])
-        #hot_encoded_df = pd.DataFrame(
-        #    hot_encoded,
-        #    columns = self.label_encoder.transform(df[clf_output_col]) self.one_hot_encoder.get_feature_names_out(cat_cols),
-        #    index = df.index,
-        #)
-
-        self.label_encoder = LabelEncoder()
-        self.label_encoder.fit([0.0, 1.0, float('nan')])
-        label_encoded_clf_np = self.label_encoder.transform(df[clf_output_col])
-        #label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np, columns=[clf_output_col])
-
-        label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np)
-
-        # Combine processed numeric and one-hot encoded data
         X = scaled_df
-        # 4. Split output columns
-        y_clf = label_encoded_clf_df 
-        y_reg = df[[reg_output_col]] if reg_output_col in df.columns else pd.DataFrame()
 
-        return X, y_clf, y_reg
+        if include_output:
+            # 3. One-hot encode categorical data if requested.
+            self.label_encoder = LabelEncoder()
+            self.label_encoder.fit([0.0, 1.0, float('nan')])
+            label_encoded_clf_np = self.label_encoder.transform(df[clf_output_col])
+            #label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np, columns=[clf_output_col])
+
+            label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np)
+            # 4. Split output columns
+            y_clf = label_encoded_clf_df 
+            y_reg = df[[reg_output_col]] if reg_output_col in df.columns else pd.DataFrame()
+            return X, y_clf, y_reg
+        else:
+            # 4. Output just the input data-frame.
+            return X
 
     # Transform new data using the fitted parameters
-    def preprocess_transform(self, df, cat_cols=cat_cols, num_cols=num_cols):
+    def preprocess_transform(self, df, cat_cols=cat_cols, num_cols=num_cols, include_output=True):
         # Impute numeric data
         imputed_df = self.mean_imputer.transform(df[input_cols])
 
@@ -95,16 +85,27 @@ class Preprocessor:
         #     index=df.index,
         # )
 
-        label_encoded_clf_df = self.label_encoder.transform(df[clf_output_col])
-
-        # Combine processed numeric and one-hot encoded data
         X = scaled_df 
-        # 4. Split output columns
-        y_clf = label_encoded_clf_df
-        y_reg = df[[reg_output_col]] if reg_output_col in df.columns else pd.DataFrame()
+        if include_output:
+            label_encoded_clf_df = self.label_encoder.transform(df[clf_output_col])
 
-        return X, y_clf, y_reg
+            # Combine processed numeric and one-hot encoded data
+            # 4. Split output columns
+            y_clf = label_encoded_clf_df
+            y_reg = df[[reg_output_col]] if reg_output_col in df.columns else pd.DataFrame()
 
+            return X, y_clf, y_reg
+        else:
+            return X
+
+    def preprocess_predict(self,df):
+        #We don't drop the ID column on load so we want to drop it before preprocssing
+        df = df.drop(columns=["ID"], errors="ignore") 
+        imputed_df = self.mean_imputer.fit_transform(df)
+        scaled_df = self.scaler.fit_transform(imputed_df)
+        return scaled_df
+
+    
 # Example usage
 if __name__ == "__main__":
     # Define constants for column groups

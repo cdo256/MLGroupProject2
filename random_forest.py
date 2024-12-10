@@ -23,6 +23,12 @@ class RandomForestClassifierModel(ClassificationModel):
     def test(self, X, y):
         y_pred = self.model.predict(X)
         return accuracy_score(y, y_pred)  # Return accuracy for testing
+    
+    def predict(self,X):
+        return self.model.predict(X)
+        print(f"Prediction: {self.model.predict(X)}")
+        print(f"Prediction probability: {self.model.predict_proba}")
+
 
 class RandomForestRegressorModel(RegressionModel):
     def __init__(self, **hyperparams):
@@ -46,3 +52,9 @@ class RandomForestRegressorModel(RegressionModel):
         y_numpy = pd.DataFrame(y).to_numpy().flatten()
         y_pred = self.model.predict(X)
         return r2_score(y_numpy, y_pred)  # Return R² score for testing
+
+
+    def predict(self,X):
+        return self.model.predict(X)
+        print(f"Prediction: {self.model.predict(X)}")
+        print(f"Prediction probability: {self.model.predict_proba}")

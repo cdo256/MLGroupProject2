@@ -1,4 +1,5 @@
 import keras.layers
+import keras.metrics
 from sklearn.neural_network import MLPClassifier
 from sklearn.neural_network import MLPRegressor
 from model import *
@@ -29,6 +30,13 @@ class ANNClassifier(ClassificationModel):
 
     def test(self, X, y):
         return self.model.score(X, y)
+    
+
+    def predict(self,X):
+        return self.model.predict(X)
+        print(f"Prediction: {self.model.predict(X)}")
+        print(f"Prediction probability: {self.model.predict_proba}")
+
 
 
 class ANNRegressor(RegressionModel):
@@ -49,6 +57,13 @@ class ANNRegressor(RegressionModel):
     def test(self, X, y):
         y_numpy = pd.DataFrame(y).to_numpy().flatten()
         return self.model.score(X, y_numpy)
+    
+    
+    def predict(self,X):
+        return self.model.predict(X)
+        print(f"Prediction: {self.model.predict(X)}")
+        print(f"Prediction probability: {self.model.predict_proba}")
+
     
 
 class KerasClassANN(ClassificationModel):
@@ -72,12 +87,18 @@ class KerasClassANN(ClassificationModel):
     def train(self, X, y):
     
         y_numpy = pd.DataFrame(y).to_numpy().flatten()
-        self.model.fit(X, y_numpy,epochs=10)
+        self.model.fit(X, y_numpy,epochs=10,verbose = 0)
         return self.model.evaluate(X, y_numpy,verbose = 0)[1]
 
     def test(self, X, y):
         y_numpy = pd.DataFrame(y).to_numpy().flatten()
         return self.model.evaluate(X, y_numpy,verbose = 0)[1]
+    
+    def predict(self,X):
+        return ((self.model.predict(X) > 0.5).astype(int)).flatten()
+        print(f"Prediction: {(self.model.predict(X) > 0.5).astype(int)}")
+
+        
     
 class KerasRegANN(RegressionModel):
     def __init__(self, **hyperparams):
@@ -106,3 +127,7 @@ class KerasRegANN(RegressionModel):
     def test(self, X, y):
         y_numpy = pd.DataFrame(y).to_numpy().flatten()
         return self.model.evaluate(X, y_numpy,verbose = 0)[1]
+    
+    def predict(self,X):
+        return self.model.predict(X).flatten()
+        print(f"Prediction: {(self.model.predict(X) > 0.5).astype(int)}")
