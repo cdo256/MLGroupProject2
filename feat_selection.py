@@ -53,14 +53,29 @@ def t_test_feature_selection(X, y, threshold=0.05):
     classes = np.unique(y)
 
 
-
     for i in range(X.shape[1]):
         feature = X.iloc[:, i]
 
-        # Split data into two groups based on class
-        group1 = feature.loc[(y == classes[0]).index[((y == classes[0])[0])==True].tolist()]
-        group2 = feature.loc[(y == classes[0]).index[((y == classes[1])[0])==True].tolist()]
+        #print(list(feature.index.values.tolist()))
 
+        # Split data into two groups based on class
+        #group1 = feature.loc[(y == classes[0]).index[((y == classes[0])[0])==True].tolist()]
+        #group2 = feature.loc[(y == classes[0]).index[((y == classes[1])[0])==True].tolist()]
+
+        group1 = []
+        group2 = []
+
+        yList = y[y.columns[0]].to_list()
+
+        k = 0
+        for j in feature:
+            if yList[k] == 0:
+                group1.append(j)
+            else:
+                group2.append(j)
+            k += 1
+
+   
         # Perform t-test
         _, p_value = ttest_ind(group1, group2)
 
@@ -305,13 +320,13 @@ def forward_selection(X, y, task, estimators=None, scoring=None, cv=5):
             last_best_score = best_score  # Update last_best_score to the new best
             best_model = best_model_for_iteration  # Update best_model to the current best model
 
-            # Print the name of the feature being added
-            if isinstance(X, pd.DataFrame):  # Check if X is a DataFrame
-                feature_name = X.columns[best_feature]
-            else:  # If X is a numpy array, use the index as feature name
-                feature_name = f"Feature_{best_feature}"
+            # # Print the name of the feature being added
+            # if isinstance(X, pd.DataFrame):  # Check if X is a DataFrame
+            #     feature_name = X.columns[best_feature]
+            # else:  # If X is a numpy array, use the index as feature name
+            #     feature_name = f"Feature_{best_feature}"
 
-            debug_print(f"Added feature: {feature_name} | Score: {best_score:.4f} | Best Model: {best_model_for_iteration}")
+            # debug_print(f"Added feature: {feature_name} | Score: {best_score:.4f} | Best Model: {best_model_for_iteration}")
         else:
             break  # Stop if no improvement is made
 
@@ -374,11 +389,11 @@ def main(X, y, top_n_features, task, retained_features=None):
 
     debug_print("Comparison of Feature Selection Methods:\n")
     # Split data into train and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
     # Compare the feature selection methods
     methods = [
-        # task, method
+        ###task, method
         (task, fsMethod.ANOVA),
         (task, fsMethod.RFE),
         (task, fsMethod.FORWARD),
@@ -427,7 +442,7 @@ def main(X, y, top_n_features, task, retained_features=None):
 
 
         # Evaluate model performance with the selected features
-        accuracy = evaluate_model(X_train, X_test, y_train, y_test, selected_features,classifier)
+        accuracy = evaluate_model(X_train, X_test, y_train, y_test, selected_features,task)
 
         # Store the method's accuracy
         results[(t, method)] = (accuracy, selected_features)

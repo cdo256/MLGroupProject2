@@ -52,7 +52,7 @@ def init(task):
     #reducer = PCAvsLDAComparison(base_df, y, top_n_features) ### This does not work currently, related error - "Data needs to be imputed so there are no NAN values"
     #best_df = reducer.main(y.columns[0])
     #print(best_df)
-    retained_features = ['PgR', 'Gene', 'HER2']
+    retained_features = ['ER', 'Gene', 'HER2']
 
     if load_features:
         print(f'Loading features from {filename}...')
@@ -80,12 +80,10 @@ def evaluate(model, k, task, param_search=False):
 
     doPrediction = False
 
-    testData = pp.load("TestDatasetExample.xls",dropIDs = False)
-    print(testData)
-    pptestData     = pp.preprocess_predict(testData)
+    # testData = pp.load("TestDatasetExample.xls",dropIDs = False)
+    # pptestData     = pp.preprocess_predict(testData)
 
-    # annReg = ANNRegressor(random_state = 1, max_iter = 5000)
-    #
+
     # init
     folds = [fold_df for _, fold_df in shuffled_df.groupby('fold')]
     for test_fold in range(k):
@@ -123,48 +121,59 @@ def get_models(features):
         'RandomForestClassifierModel': (modelType.CLASSIFICATION, RandomForestClassifierModel()),
     }
 
+
+
+#needs to be added
+def Prediction(task,dataSet):
+    predictions = {}
+    X_train, y_train = init(task)
+    models = get_models(features)
+    match task:
+        case modelType.REGRESSION:
+            _, model = models['ANNRegressor']
+        case modelType.CLASSIFICATION:
+            _, model = models['KerasClassANN']
+        case _:
+            raise ValueError('Invalid model type')
+    test_df = pp.load(dataSet, dropIDs=False)
+    X_test = pp.preprocess_predict(test_df)
+    X_test = X_test[features]
+    print('train', X_train.shape)
+    print('test', X_test.shape)
+    model.train(X_train, y_train)
+    predictions = model.predict(X_test)
+    print(predictions)
+    match task:
+        case modelType.REGRESSION:
+            output_label = reg_output_col
+            output_filename = 'RFSPrediction.csv'
+        case modelType.CLASSIFICATION:
+            output_label = clf_output_col
+            output_filename = 'PCRPrediction.csv'
+        case _:
+            raise ValueError('Invalid model type')
+    dictPredict = {
+        'ID': test_df['ID'],
+        output_label: predictions,
+    }
+    df_predictions = pd.DataFrame(dictPredict) 
+    print(f'Writing predictions to {output_filename}')
+    df_predictions.to_csv(output_filename, index = False)    
+
+
+
+
+    
 if __name__ == '__main__':
     mode = 'predict'
     match mode:
         case 'predict':
-            predictions = {}
-            for task in modelType:
-                X_train, y_train = init(task)
-                models = get_models(features)
-                match task:
-                    case modelType.REGRESSION:
-                        _, model = models['ANNRegressor']
-                    case modelType.CLASSIFICATION:
-                        _, model = models['KerasClassANN']
-                    case _:
-                        raise ValueError('Invalid model type')
-                test_df = pp.load('TestDatasetExample.xls', dropIDs=False)
-                X_test = pp.preprocess_predict(test_df)
-                X_test = X_test[features]
-                print('train', X_train.shape)
-                print('test', X_test.shape)
-                model.train(X_train, y_train)
-                predictions = model.predict(X_test)
-                print(predictions)
-                match task:
-                    case modelType.REGRESSION:
-                        output_label = reg_output_col
-                        output_filename = 'RFSPrediction.csv'
-                    case modelType.CLASSIFICATION:
-                        output_label = clf_output_col
-                        output_filename = 'PCRPrediction.csv'
-                    case _:
-                        raise ValueError('Invalid model type')
-                dictPredict = {
-                    'ID': test_df['ID'],
-                    output_label: predictions,
-                }
-                df_predictions = pd.DataFrame(dictPredict) 
-                print(f'Writing predictions to {output_filename}')
-                df_predictions.to_csv(output_filename, index = False)
+            Prediction(modelType.REGRESSION)
+            Prediction(modelType.CLASSIFICATION)
         case 'evaluate':
             for task in modelType:
-                X, y = init(modelType.REGRESSION)
+                #X, y = init(modelType.REGRESSION)
+                X, y = init(modelType.CLASSIFICATION)
                 models = get_models(features)
                 for t, model in models.values():
                     if t != task:
