@@ -38,14 +38,12 @@ def init(task):
     top_n_features = 10
     pp = Preprocessor()
     base_df = pp.load('TrainDataset2024.xls')
-    X, y_clf, y_reg = pp.preprocess_fit(base_df)
+    X, y = pp.preprocess_fit(base_df, task=task)
 
     match task:
         case modelType.REGRESSION:
-            y = y_reg
             filename = 'features-reg.txt'
         case modelType.CLASSIFICATION:
-            y = y_clf
             filename = 'features-clf.txt'
         case _:
             raise ValueError('Invalid task')
@@ -96,16 +94,16 @@ def evaluate(model, k, task, param_search=False):
         train_df = pd.concat([folds[i] for i in range(k) if i != test_fold])
         y_train = {}
         y_test = {}
-        X_train_full, y_train[modelType.CLASSIFICATION] , y_train[modelType.REGRESSION] = pp.preprocess_fit(train_df)
-        X_test_full, y_test[modelType.CLASSIFICATION], y_test[modelType.REGRESSION] = pp.preprocess_transform(test_df)
+        X_train_full, y_train = pp.preprocess_fit(train_df, task=task)
+        X_test_full, y_test = pp.preprocess_transform(test_df, task=task)
         X_train = X_train_full[features]
         X_test = X_test_full[features]
 
         if param_search:
             model.param_search(X_train, y_train)
 
-        train_accuracy = model.train(X_train, y_train[task])
-        test_accuracy = model.test(X_test, y_test[task])
+        train_accuracy = model.train(X_train, y_train)
+        test_accuracy = model.test(X_test, y_test)
         print(f'{train_accuracy:.03}, {test_accuracy:.03}')
 
 #Returns a numpy array of the predictions for the model that was passed in
@@ -126,7 +124,7 @@ def get_models(features):
     }
 
 if __name__ == '__main__':
-    mode = 'predict'
+    mode = 'evaluate'
     match mode:
         case 'predict':
             predictions = {}
@@ -141,10 +139,10 @@ if __name__ == '__main__':
                     case _:
                         raise ValueError('Invalid model type')
                 test_df = pp.load('TestDatasetExample.xls', dropIDs=False)
-                X_test = pp.preprocess_transform(test_df, include_output=False)
+                X_test = pp.preprocess_predict(test_df)
                 X_test = X_test[features]
-                print('train cols', X_train.columns)
-                print('test cols', X_test.columns)
+                print('train', X_train.shape)
+                print('test', X_test.shape)
                 model.train(X_train, y_train)
                 predictions[task] = model.predict(X_test)
                 print(predictions[task])

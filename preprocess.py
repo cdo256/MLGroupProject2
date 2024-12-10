@@ -4,6 +4,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
+from BaseClasses import modelType
 #to_excel required openpyxl api
 
 base_df = None
@@ -33,6 +34,8 @@ class Preprocessor:
         self.mean_imputer = SimpleImputer(strategy="mean").set_output(transform="pandas")
         self.scaler = StandardScaler().set_output(transform="pandas")
         self.one_hot_encoder = None
+        self.label_encoder = LabelEncoder()
+        self.label_encoder.fit([0.0, 1.0, float('nan')])
 
     # Method to load the dataset
     def load(self, filename, dropIDs = True):
@@ -42,10 +45,21 @@ class Preprocessor:
             df = df.drop(columns=["ID"], errors="ignore")  # Drop the ID column if it exists
         return df
 
-    
+    def get_output_col(self, task):
+        match task:
+            case modelType.CLASSIFICATION:
+                return clf_output_col
+            case modelType.REGRESSION:
+                return reg_output_col
+            case _:
+                raise ValueError('Invalid task')
 
     # Fit and transform the data for pre-processing
-    def preprocess_fit(self, df, cat_cols=cat_cols, num_cols=num_cols, clf_output_col=clf_output_col, reg_output_col=reg_output_col, include_output=True):
+    def preprocess_fit(self, df, cat_cols=cat_cols, num_cols=num_cols, clf_output_col=clf_output_col, reg_output_col=reg_output_col, *, task):
+        output_col = self.get_output_col(task)
+
+        output = df[output_col]
+
         # 1. Impute numeric data (mean for continuous, median for categorical numerics)
         imputed_df = self.mean_imputer.fit_transform(df[input_cols])
 
@@ -53,24 +67,25 @@ class Preprocessor:
         scaled_df = self.scaler.fit_transform(imputed_df)
         X = scaled_df
 
-        if include_output:
-            # 3. One-hot encode categorical data if requested.
-            self.label_encoder = LabelEncoder()
-            self.label_encoder.fit([0.0, 1.0, float('nan')])
-            label_encoded_clf_np = self.label_encoder.transform(df[clf_output_col])
-            #label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np, columns=[clf_output_col])
+        match task:
+            case modelType.CLASSIFICATION:
+                label_encoded_clf_np = self.label_encoder.transform(output)
+                #label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np, columns=[clf_output_col])
 
-            label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np)
-            # 4. Split output columns
-            y_clf = label_encoded_clf_df 
-            y_reg = df[[reg_output_col]] if reg_output_col in df.columns else pd.DataFrame()
-            return X, y_clf, y_reg
-        else:
-            # 4. Output just the input data-frame.
-            return X
+                label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np)
+                # 4. Split output columns
+                y_clf = label_encoded_clf_df
+                return X, y_clf
+            case modelType.REGRESSION:
+                y_reg = output
+                return X, y_reg
 
     # Transform new data using the fitted parameters
-    def preprocess_transform(self, df, cat_cols=cat_cols, num_cols=num_cols, include_output=True):
+    def preprocess_transform(self, df, cat_cols=cat_cols, num_cols=num_cols, *, task):
+        output_col = self.get_output_col(task)
+
+        output = df[output_col]
+
         # Impute numeric data
         imputed_df = self.mean_imputer.transform(df[input_cols])
 
@@ -85,27 +100,28 @@ class Preprocessor:
         #     index=df.index,
         # )
 
-        X = scaled_df 
-        if include_output:
-            label_encoded_clf_df = self.label_encoder.transform(df[clf_output_col])
+        X = scaled_df
 
-            # Combine processed numeric and one-hot encoded data
-            # 4. Split output columns
-            y_clf = label_encoded_clf_df
-            y_reg = df[[reg_output_col]] if reg_output_col in df.columns else pd.DataFrame()
+        match task:
+            case modelType.CLASSIFICATION:
+                label_encoded_clf_np = self.label_encoder.transform(output)
+                #label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np, columns=[clf_output_col])
 
-            return X, y_clf, y_reg
-        else:
-            return X
-
-    def preprocess_predict(self,df):
+                label_encoded_clf_df = pd.DataFrame(label_encoded_clf_np)
+                # 4. Split output columns
+                y_clf = label_encoded_clf_df
+                return X, y_clf
+            case modelType.REGRESSION:
+                y_reg = output
+                return X, y_reg
+ 
+    def preprocess_predict(self, df):
         #We don't drop the ID column on load so we want to drop it before preprocssing
         df = df.drop(columns=["ID"], errors="ignore") 
         imputed_df = self.mean_imputer.fit_transform(df)
         scaled_df = self.scaler.fit_transform(imputed_df)
         return scaled_df
 
-    
 # Example usage
 if __name__ == "__main__":
     # Define constants for column groups
