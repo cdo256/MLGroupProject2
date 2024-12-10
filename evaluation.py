@@ -172,8 +172,7 @@ if __name__ == '__main__':
             Prediction(modelType.CLASSIFICATION)
         case 'evaluate':
             for task in modelType:
-                X, y = init(modelType.REGRESSION)
-                X, y = init(modelType.CLASSIFICATION)
+                X, y = init(task)
                 models = get_models(features)
                 for t, model in models.values():
                     if t != task:
