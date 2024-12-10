@@ -155,7 +155,7 @@ def predict(task, test_filename):
     }
     df_predictions = pd.DataFrame(dictPredict) 
     print(f'Writing predictions to {output_filename}')
-    df_predictions.to_csv(output_filename, index = False)    
+    df_predictions.to_csv(output_filename, index = False)
 
 if __name__ == '__main__':
     for task in modelType:
