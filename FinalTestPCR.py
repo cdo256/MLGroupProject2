@@ -1,4 +1,4 @@
 from BaseClasses import modelType
-from evaluation import Prediction
+from evaluation import predict
 
-Prediction(modelType.CLASSIFICATION,'TestDatasetExample.xls')
+predict(modelType.CLASSIFICATION,'TestDatasetExample.xls')

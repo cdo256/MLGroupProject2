@@ -121,10 +121,7 @@ def get_models(features):
         'RandomForestClassifierModel': (modelType.CLASSIFICATION, RandomForestClassifierModel()),
     }
 
-
-
-#needs to be added
-def Prediction(task,dataSet):
+def predict(task, test_filename):
     predictions = {}
     X_train, y_train = init(task)
     models = get_models(features)
@@ -135,7 +132,7 @@ def Prediction(task,dataSet):
             _, model = models['KerasClassANN']
         case _:
             raise ValueError('Invalid model type')
-    test_df = pp.load(dataSet, dropIDs=False)
+    test_df = pp.load(test_filename, dropIDs=False)
     X_test = pp.preprocess_predict(test_df)
     X_test = X_test[features]
     print('train', X_train.shape)
@@ -160,21 +157,11 @@ def Prediction(task,dataSet):
     print(f'Writing predictions to {output_filename}')
     df_predictions.to_csv(output_filename, index = False)    
 
-
-
-
-    
 if __name__ == '__main__':
-    mode = 'predict'
-    match mode:
-        case 'predict':
-            Prediction(modelType.REGRESSION)
-            Prediction(modelType.CLASSIFICATION)
-        case 'evaluate':
-            for task in modelType:
-                X, y = init(task)
-                models = get_models(features)
-                for t, model in models.values():
-                    if t != task:
-                        continue
-                    evaluate(model, k=10, task=task)
+    for task in modelType:
+        X, y = init(task)
+        models = get_models(features)
+        for t, model in models.values():
+            if t != task:
+                continue
+            evaluate(model, k=10, task=task)
