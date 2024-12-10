@@ -58,6 +58,8 @@ class Preprocessor:
     def preprocess_fit(self, df, cat_cols=cat_cols, num_cols=num_cols, clf_output_col=clf_output_col, reg_output_col=reg_output_col, *, task):
         output_col = self.get_output_col(task)
 
+        # Exclude rows with NA's in the output column.
+        df = df.dropna(subset=[output_col])
         output = df[output_col]
 
         # 1. Impute numeric data (mean for continuous, median for categorical numerics)
@@ -84,6 +86,8 @@ class Preprocessor:
     def preprocess_transform(self, df, cat_cols=cat_cols, num_cols=num_cols, *, task):
         output_col = self.get_output_col(task)
 
+        # Exclude rows with NA's in the output column.
+        df = df.dropna(subset=[output_col])
         output = df[output_col]
 
         # Impute numeric data
