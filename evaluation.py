@@ -124,7 +124,7 @@ def get_models(features):
     }
 
 if __name__ == '__main__':
-    mode = 'evaluate'
+    mode = 'predict'
     match mode:
         case 'predict':
             predictions = {}
@@ -144,23 +144,24 @@ if __name__ == '__main__':
                 print('train', X_train.shape)
                 print('test', X_test.shape)
                 model.train(X_train, y_train)
-                predictions[task] = model.predict(X_test)
-                print(predictions[task])
+                predictions = model.predict(X_test)
+                print(predictions)
                 match task:
                     case modelType.REGRESSION:
                         output_label = reg_output_col
+                        output_filename = 'RFSPrediction.csv'
                     case modelType.CLASSIFICATION:
                         output_label = clf_output_col
+                        output_filename = 'PCRPrediction.csv'
                     case _:
                         raise ValueError('Invalid model type')
-            dictPredict = {
-                'ID': test_df['ID'],
-                reg_output_col: predictions[modelType.REGRESSION],
-                clf_output_col: predictions[modelType.CLASSIFICATION],
-            }
-            df_predictions = pd.DataFrame(dictPredict) 
-            print('Writing predictions to Predictions.csv')
-            df_predictions.to_csv("Predictions.csv", index = False)
+                dictPredict = {
+                    'ID': test_df['ID'],
+                    output_label: predictions,
+                }
+                df_predictions = pd.DataFrame(dictPredict) 
+                print(f'Writing predictions to {output_filename}')
+                df_predictions.to_csv(output_filename, index = False)
         case 'evaluate':
             for task in modelType:
                 X, y = init(modelType.REGRESSION)
