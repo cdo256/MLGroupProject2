@@ -3,8 +3,12 @@ from linear_regression import LinearRegression
 from logistic_regression import LogisticRegression
 from preprocess import Preprocessor, clf_output_col, reg_output_col
 from sklearn.model_selection import train_test_split
-import feat_selection as fs
+import statistics
+from dataclasses import dataclass
+from model import MLModel
+import time
 
+import feat_selection as fs
 from ann import ANNClassifier, ANNRegressor,KerasClassANN, KerasRegANN
 from BaseClasses import modelType
 from random_forest import RandomForestClassifierModel, RandomForestRegressorModel
@@ -67,6 +71,54 @@ def init(task):
             write_features(features, filename)
     return X[features], y
 
+@dataclass
+class EvaluationResult:
+    model: MLModel
+    task: modelType
+    train_accuracy_mean: float
+    train_accuracy_stdev: float
+    test_accuracy_mean: float
+    test_accuracy_stdev: float
+    train_time_mean: float
+    test_time_mean: float
+    param_search_time: float
+
+    def __init__(self, model, task, train_accuracies, test_accuracies, train_times, test_times, param_search_time):
+        self.model = model
+        self.task = task
+        self.train_accuracy_mean = statistics.mean(train_accuracies)
+        self.train_accuracy_stdev = statistics.stdev(train_accuracies)
+        self.test_accuracy_mean = statistics.mean(test_accuracies)
+        self.test_accuracy_stdev = statistics.stdev(test_accuracies)
+        self.train_time_mean = statistics.mean(train_times)
+        self.test_time_mean = statistics.mean(test_times)
+        self.param_search_time = param_search_time
+
+    def to_dict(self):
+        return {
+            'model_name': self.model.name,
+            'task': self.task.name,
+            'train_accuracy_mean': self.train_accuracy_mean,
+            'train_accuracy_stdev': self.train_accuracy_stdev,
+            'test_accuracy_mean': self.test_accuracy_mean,
+            'test_accuracy_stdev': self.test_accuracy_stdev,
+            'train_time_mean': self.train_time_mean,
+            'test_time_mean': self.test_time_mean,
+            'param_search_time': self.param_search_time,
+        }
+
+    @classmethod
+    def to_dataframe(cls, results):
+        return pd.DataFrame(map(lambda r: r.to_dict(), results))
+
+def time_function(function, *args, **kwargs):
+    start_time = time.perf_counter()
+    result = function(*args, **kwargs)
+    end_time = time.perf_counter()
+    elapsed = end_time - start_time
+    return result, elapsed
+
+
 # Perform cross-validation
 def evaluate(model, k, task, param_search=False):
     global features, pp, base_df, retained_features
@@ -78,7 +130,17 @@ def evaluate(model, k, task, param_search=False):
     
     pp = Preprocessor()
 
+    if param_search:
+        X, y = pp.preprocess_fit(base_df, task=task)
+        _, param_search_time = time_function(model.param_search, X, y)
+        #model.param_search(X, y)
+    else:
+        param_search_time = 0
 
+    train_accuracies = []
+    test_accuracies = []
+    train_times = []
+    test_times = []
 
     # init
     folds = [fold_df for _, fold_df in shuffled_df.groupby('fold')]
@@ -92,18 +154,23 @@ def evaluate(model, k, task, param_search=False):
         X_test_full, y_test = pp.preprocess_transform(test_df, task=task)
         X_train = X_train_full[features]
         X_test = X_test_full[features]
-
-        if param_search:
-            model.param_search(X_train, y_train)
-
-        train_accuracy = model.train(X_train, y_train)
-        test_accuracy = model.test(X_test, y_test)
+        
+        train_accuracy, train_time = time_function(model.train, X_train, y_train)
+        train_accuracies.append(train_accuracy)
+        train_times.append(train_time)
+        test_accuracy, test_time = time_function(model.test, X_test, y_test)
+        test_accuracies.append(test_accuracy)
+        test_times.append(test_time)
         print(f'{train_accuracy:.03}, {test_accuracy:.03}')
 
-#Returns a numpy array of the predictions for the model that was passed in
-def predict(model,X_pred):
-    predictions = model.predict(X_pred)
-    return predictions
+    return EvaluationResult(
+        model=model,
+        task=task,
+        train_accuracies=train_accuracies,
+        test_accuracies=test_accuracies,
+        train_times=train_times,
+        test_times=test_times,
+        param_search_time=param_search_time)
 
 def get_models(features):
     return {
@@ -154,10 +221,16 @@ def predict(task, test_filename):
     df_predictions.to_csv(output_filename, index = False)    
 
 if __name__ == '__main__':
+    results = []
     for task in modelType:
         X, y = init(task)
         models = get_models(features)
         for t, model in models.values():
             if t != task:
                 continue
-            evaluate(model, k=10, task=task)
+            result = evaluate(model, k=10, task=task)
+            print(EvaluationResult.to_dataframe([result]))
+            results.append(result)
+    
+    results_df = EvaluationResult.to_dataframe(results)
+    print(results_df)
