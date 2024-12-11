@@ -78,10 +78,6 @@ def evaluate(model, k, task, param_search=False):
     
     pp = Preprocessor()
 
-    doPrediction = False
-
-    # testData = pp.load("TestDatasetExample.xls",dropIDs = False)
-    # pptestData     = pp.preprocess_predict(testData)
 
 
     # init
