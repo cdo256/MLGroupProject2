@@ -94,18 +94,29 @@ class EvaluationResult:
         self.test_time_mean = statistics.mean(test_times)
         self.param_search_time = param_search_time
 
-    def to_dict(self):
-        return {
-            'model_name': self.model.name,
-            'task': self.task.name,
-            'train_accuracy_mean': self.train_accuracy_mean,
-            'train_accuracy_stdev': self.train_accuracy_stdev,
-            'test_accuracy_mean': self.test_accuracy_mean,
-            'test_accuracy_stdev': self.test_accuracy_stdev,
-            'train_time_mean': self.train_time_mean,
-            'test_time_mean': self.test_time_mean,
-            'param_search_time': self.param_search_time,
-        }
+    def to_dict(self, plain=False):
+        if plain:
+            return {
+                'model_name': self.model.name,
+                'task': self.task.name,
+                'train_accuracy_mean': self.train_accuracy_mean,
+                'train_accuracy_stdev': self.train_accuracy_stdev,
+                'test_accuracy_mean': self.test_accuracy_mean,
+                'test_accuracy_stdev': self.test_accuracy_stdev,
+                'train_time_mean': self.train_time_mean,
+                'test_time_mean': self.test_time_mean,
+                'param_search_time': self.param_search_time,
+            }
+        else: 
+            return {
+                'model_name': self.model.name,
+                'task': self.task.name,
+                'train_accuracy': f'{self.train_accuracy_mean:.3f} ± {self.train_accuracy_stdev:.3f}',
+                'test_accuracy': f'{self.test_accuracy_mean:.3f} ± {self.test_accuracy_stdev:.3f}',
+                'train_time_mean': f'{self.train_time_mean*1000:.3f}ms',
+                'test_time_mean': f'{self.test_time_mean*1000:.3f}ms',
+                'param_search_time': f'{self.param_search_time*1000:.3f}ms',
+            }
 
     @classmethod
     def to_dataframe(cls, results):
