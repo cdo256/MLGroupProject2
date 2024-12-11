@@ -7,6 +7,7 @@ import statistics
 from dataclasses import dataclass
 from model import MLModel
 import time
+from sklearn.metrics import confusion_matrix
 
 import feat_selection as fs
 from ann import ANNClassifier, ANNRegressor,KerasClassANN, KerasRegANN
@@ -118,6 +119,23 @@ def time_function(function, *args, **kwargs):
     elapsed = end_time - start_time
     return result, elapsed
 
+def balanced_accuracy(y_true, y_pred):
+    # Compute confusion matrix
+    cm = confusion_matrix(y_true, y_pred)
+
+    # Number of classes
+    n_classes = cm.shape[0]
+
+    # Calculate recall for each class
+    recalls = []
+    for i in range(n_classes):
+        TP = cm[i, i]  # True Positives
+        FN = cm[i, :].sum() - TP  # False Negatives
+        recall = TP / (TP + FN) if (TP + FN) > 0 else 0
+        recalls.append(recall)
+
+    # Calculate balanced accuracy: average of recalls
+    return np.mean(recalls)
 
 # Perform cross-validation
 def evaluate(model, k, task, param_search=False):
@@ -203,6 +221,8 @@ def predict(task, test_filename):
     model.train(X_train, y_train)
     predictions = model.predict(X_test)
     print(predictions)
+    balance_accuracy = balanced_accuracy(y_test, predictions)
+    print(f"Balanced accuracy is {balance_accuracy} for model: {model}")
     match task:
         case modelType.REGRESSION:
             output_label = reg_output_col
