@@ -3,6 +3,7 @@ import sklearn.linear_model
 
 class LinearRegression(RegressionModel):
     def __init__(self, **hyperparams):
+        self.name = 'LinearRegression'
         self.param_grid = {}
         self.hyperparams = hyperparams
         self.model = sklearn.linear_model.LinearRegression(**hyperparams)

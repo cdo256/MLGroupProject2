@@ -7,6 +7,7 @@ from model import *
 
 class RandomForestClassifierModel(ClassificationModel):
     def __init__(self, **hyperparams):
+        self.name = 'RandomForestClassifierModel'
         self.param_grid = {}
         self.hyperparams = hyperparams
         self.model = RandomForestClassifier(**hyperparams)
@@ -32,6 +33,7 @@ class RandomForestClassifierModel(ClassificationModel):
 
 class RandomForestRegressorModel(RegressionModel):
     def __init__(self, **hyperparams):
+        self.name = 'RandomForestRegressorModel'
         self.param_grid = {}
         self.hyperparams = hyperparams
         self.model = RandomForestRegressor(**hyperparams)

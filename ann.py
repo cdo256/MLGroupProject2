@@ -16,6 +16,7 @@ def r_square(y_true, y_pred):
 
 class ANNClassifier(ClassificationModel):
     def __init__(self, **hyperparams):
+        self.name = 'ANNClassifier'
         self.param_grid = {}
         self.hyperparams = hyperparams
         self.model = MLPClassifier(**hyperparams)
@@ -41,6 +42,7 @@ class ANNClassifier(ClassificationModel):
 
 class ANNRegressor(RegressionModel):
     def __init__(self, **hyperparams):
+        self.name = 'ANNRegressor'
         self.param_grid = {}
         self.hyperparams = hyperparams
         self.model = MLPRegressor(**hyperparams)
@@ -68,6 +70,7 @@ class ANNRegressor(RegressionModel):
 
 class KerasClassANN(ClassificationModel):
     def __init__(self, **hyperparams):
+        self.name = 'KerasClassANN'
         self.param_grid = {}
         self.hyperparams = hyperparams
 
@@ -102,6 +105,7 @@ class KerasClassANN(ClassificationModel):
     
 class KerasRegANN(RegressionModel):
     def __init__(self, **hyperparams):
+        self.name = 'KerasRegANN'
         self.param_grid = {}
         self.hyperparams = hyperparams
 

@@ -3,6 +3,7 @@ import sklearn.linear_model
 
 class LogisticRegression(ClassificationModel):
     def __init__(self, **hyperparams):
+        self.name = 'LogisticRegression'
         self.param_grid = {}
         self.hyperparams = hyperparams
         self.model = sklearn.linear_model.LogisticRegression(**hyperparams)
