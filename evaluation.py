@@ -246,4 +246,8 @@ if __name__ == '__main__':
     results_df = EvaluationResult.to_dataframe(results)
     results_df.to_csv('results.csv')
     print('Results written to results.csv')
+    print()
+    print()
+    print('RESULTS:')
+    print()
     print(results_df)
