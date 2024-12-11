@@ -6,14 +6,6 @@ from model import *
 import pandas as pd
 import keras
 
-# coefficient of determination (R^2) for regression
-def r_square(y_true, y_pred):
-    from keras import backend as K
-    SS_res =  K.sum(K.square(y_true - y_pred)) 
-    SS_tot = K.sum(K.square(y_true - K.mean(y_true))) 
-    return (1 - SS_res/(SS_tot + K.epsilon()))
-
-
 class ANNClassifier(ClassificationModel):
     def __init__(self, **hyperparams):
         self.name = 'ANNClassifier'
@@ -116,7 +108,7 @@ class KerasRegANN(RegressionModel):
             self.model.add(keras.layers.Dense(i, activation = "relu"))
 
         self.model.add(keras.layers.Dense(self.hyperparams["output_size"]))
-        self.model.compile(loss = "mean_squared_error",optimizer="adam",metrics=[r_square])
+        self.model.compile(loss = "mean_squared_error",optimizer="adam",metrics=[keras.metrics.R2Score])
     
     def param_search(self, X, y):
         self.model, self.hyperparams = sklearn_param_search(
