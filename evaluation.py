@@ -233,4 +233,6 @@ if __name__ == '__main__':
             results.append(result)
     
     results_df = EvaluationResult.to_dataframe(results)
+    results_df.to_csv('results.csv')
+    print('Results written to results.csv')
     print(results_df)
