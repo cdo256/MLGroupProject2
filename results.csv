@@ -1,0 +1,4 @@
+,model_name,task,train_accuracy,test_accuracy,train_time_mean,test_time_mean
+0,ANNRegressor,REGRESSION,0.462 ± 0.020,-0.145 ± 0.165,12184.000ms,2.619ms
+1,RandomForestRegressorModel,REGRESSION,0.859 ± 0.003,-0.031 ± 0.088,538.227ms,9.461ms
+2,RandomForestClassifierModel,CLASSIFICATION,1.000 ± 0.000,0.770 ± 0.043,318.888ms,15.359ms
