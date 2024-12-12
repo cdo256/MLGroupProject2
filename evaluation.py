@@ -257,13 +257,8 @@ if __name__ == '__main__':
     for task in modelType:
         X, y = init(task)
         models = get_models(features)
-        select_models = [
-            'ANNClassifier',
-            'ANNRegressor',
-            'RandomForestClassifierModel',
-            'RandomForestRegressorModel',
-            'ElasticNetRegressor',
-        ]
+        select_models = models.keys()
+
         for model_name in select_models:
             t, model = models[model_name]
             if t != task:
