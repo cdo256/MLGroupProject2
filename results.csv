@@ -1,2 +1,10 @@
 ,model_name,task,train_accuracy,test_accuracy,train_time_mean,test_time_mean
-0,ElasticNetRegressor,CLASSIFICATION,0.000 ± 0.000,-0.013 ± 0.016,13.174ms,5.969ms
+0,LinearRegression,REGRESSION,0.063 ± 0.008,-0.036 ± 0.116,1.597ms,0.732ms
+1,ANNRegressor,REGRESSION,0.635 ± 0.019,-0.446 ± 0.495,3762.080ms,1.040ms
+2,KerasRegANN,REGRESSION,0.138 ± 0.121,0.043 ± 0.128,218.114ms,38.866ms
+3,RandomForestRegressorModel,REGRESSION,0.859 ± 0.005,-0.030 ± 0.103,161.424ms,3.840ms
+4,LogisticRegression,CLASSIFICATION,0.811 ± 0.009,0.797 ± 0.073,5.556ms,1.903ms
+5,ANNClassifier,CLASSIFICATION,0.991 ± 0.003,0.792 ± 0.045,1648.963ms,2.196ms
+6,KerasClassANN,CLASSIFICATION,0.911 ± 0.049,0.858 ± 0.055,200.466ms,37.943ms
+7,RandomForestClassifierModel,CLASSIFICATION,1.000 ± 0.000,0.808 ± 0.073,92.764ms,5.610ms
+8,ElasticNetRegressor,CLASSIFICATION,0.000 ± 0.000,-0.016 ± 0.018,2.317ms,1.078ms
