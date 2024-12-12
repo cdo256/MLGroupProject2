@@ -258,11 +258,11 @@ if __name__ == '__main__':
         X, y = init(task)
         models = get_models(features)
         select_models = [
-        #    'ANNClassifier',
+            'ANNClassifier',
             'ANNRegressor',
             'RandomForestClassifierModel',
             'RandomForestRegressorModel',
-            'ElasticNetRegressor'
+            'ElasticNetRegressor',
         ]
         for model_name in select_models:
             t, model = models[model_name]
