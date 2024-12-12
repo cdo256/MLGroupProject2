@@ -206,6 +206,7 @@ def evaluate(model, k, task, param_search=False):
 def get_models(features):
     return {
         'LinearRegression': (modelType.REGRESSION, LinearRegression()),
+        'ElasticNetRegressor': (modelType.REGRESSION, ElasticNetRegressor()),
         'ANNRegressor': (modelType.REGRESSION, ANNRegressor(random_state = 1, max_iter = 5000)),
         'KerasRegANN': (modelType.REGRESSION, KerasRegANN(input_dim = len(features),output_size = 1,hid_size = (100,100,100))), 
         'RandomForestRegressorModel': (modelType.REGRESSION, RandomForestRegressorModel()), 
@@ -213,7 +214,6 @@ def get_models(features):
         'ANNClassifier': (modelType.CLASSIFICATION, ANNClassifier(random_state = 1, max_iter = 2000)), 
         'KerasClassANN': (modelType.CLASSIFICATION, KerasClassANN(input_dim = len(features),output_size = 1,hid_size = (100,100,100))), 
         'RandomForestClassifierModel': (modelType.CLASSIFICATION, RandomForestClassifierModel()),
-        'ElasticNetRegressor': (modelType.CLASSIFICATION, ElasticNetRegressor()),
     }
 
 def predict(task, test_filename):
