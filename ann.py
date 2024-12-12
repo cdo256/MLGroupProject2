@@ -47,7 +47,21 @@ class ANNClassifier(ClassificationModel):
 class ANNRegressor(RegressionModel):
     def __init__(self, **hyperparams):
         self.name = 'ANNRegressor'
-        self.param_grid = {}
+        self.param_grid = {
+            #'activation': ['relu', 'logistic'],
+            # Strength of L2 regularization
+            #'alpha': [5e-2, 1e-2, 5e-3, 1e-3],
+            'alpha': [2e-2, 1e-2], # Evaluate larger regularization parameters
+            'hidden_layer_sizes': [
+                (100,),
+                (100,20),
+                (40,20,5),
+                (40,20,5,5),
+                (40,20,20,5,5),
+                (100,40,40,20,5,5),
+                #(100,100,100),
+            ],
+        }
         self.hyperparams = hyperparams
         self.model = MLPRegressor(**hyperparams)
     
