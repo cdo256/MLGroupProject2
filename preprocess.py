@@ -62,7 +62,7 @@ class Preprocessor:
         df = df.dropna(subset=[output_col])
         output = df[output_col]
 
-        # 1. Impute numeric data (mean for continuous, median for categorical numerics)
+        # 1. Impute numeric data (mean for both continuous and categorical column)
         imputed_df = self.mean_imputer.fit_transform(df[input_cols])
 
         # 2. Normalize numeric data

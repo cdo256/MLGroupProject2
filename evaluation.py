@@ -13,6 +13,8 @@ from ann import ANNClassifier, ANNRegressor,KerasClassANN, KerasRegANN
 from BaseClasses import modelType
 from random_forest import RandomForestClassifierModel, RandomForestRegressorModel
 
+from dimensionality_reduction import PCAvsLDAComparison
+
 enable_feature_selection = True
 load_features = True
 save_features = True
@@ -43,19 +45,27 @@ def init(task):
     pp = Preprocessor()
     base_df = pp.load('TrainDataset2024.xls')
     X, y = pp.preprocess_fit(base_df, task=task)
-
     match task:
         case modelType.REGRESSION:
+
             filename = 'features-reg.txt'
+            
+            print(f"Y Columns:\n{y}")
+            reducer = PCAvsLDAComparison(X, y, top_n_features, task) ### This does not work currently, related error - "Data needs to be imputed so there are no NAN values"
+            best_df = reducer.main(X, y, top_n_features, task)
+            print(best_df)
+            
         case modelType.CLASSIFICATION:
             filename = 'features-clf.txt'
+            
+            print(f"Y Columns:\n{y}")
+            reducer = PCAvsLDAComparison(X, y, top_n_features, task) ### This does not work currently, related error - "Data needs to be imputed so there are no NAN values"
+            best_df = reducer.main(X, y, top_n_features, task)
+            print(best_df)
+            
         case _:
             raise ValueError('Invalid task')
 
-    #print(f"Y Columns:\n{y.columns}")
-    #reducer = PCAvsLDAComparison(base_df, y, top_n_features) ### This does not work currently, related error - "Data needs to be imputed so there are no NAN values"
-    #best_df = reducer.main(y.columns[0])
-    #print(best_df)
     retained_features = ['ER', 'Gene', 'HER2']
 
     if load_features:
