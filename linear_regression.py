@@ -9,8 +9,7 @@ class LinearRegression(RegressionModel):
         self.model = sklearn.linear_model.LinearRegression(**hyperparams)
     
     def param_search(self, X, y):
-        self.model, self.hyperparams = sklearn_param_search(
-            self.model, self.param_grid, X, y)
+        pass # No hyperparams to tune
 
     def train(self, X, y):
         self.model.fit(X, y)

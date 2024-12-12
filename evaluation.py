@@ -7,6 +7,7 @@ import statistics
 from dataclasses import dataclass
 from model import MLModel
 import time
+import json
 
 import feat_selection as fs
 from ann import ANNClassifier, ANNRegressor,KerasClassANN, KerasRegANN
@@ -129,6 +130,17 @@ def time_function(function, *args, **kwargs):
     elapsed = end_time - start_time
     return result, elapsed
 
+def load_params(model_name):
+    filename = f'{model_name}-params.json'
+    print(f'Reading params from {filename}.')
+    with open(filename, 'r') as file:
+        return json.loads(file.read())
+
+def write_params(model_name, params):
+    filename = f'{model_name}-params.json'
+    print(f'Writing params to {filename}.')
+    with open(filename, 'w') as file:
+        file.write(json.dumps(params))
 
 # Perform cross-validation
 def evaluate(model, k, task, param_search=False):
@@ -141,12 +153,18 @@ def evaluate(model, k, task, param_search=False):
     
     pp = Preprocessor()
 
+    params = None
+    param_search_time = 0
     if param_search:
-        X, y = pp.preprocess_fit(base_df, task=task)
-        _, param_search_time = time_function(model.param_search, X, y)
-        #model.param_search(X, y)
-    else:
-        param_search_time = 0
+        try:
+            params = load_params(model_name)
+        except FileNotFoundError:
+            print(f'File not found.')
+        if params is None:
+            X, y = pp.preprocess_fit(base_df, task=task)
+            time_function(model.param_search, X, y)
+            params = model.hyperparams
+            write_params(model_name, params)
 
     train_accuracies = []
     test_accuracies = []
@@ -239,7 +257,7 @@ if __name__ == '__main__':
         for t, model in models.values():
             if t != task:
                 continue
-            result = evaluate(model, k=10, task=task)
+            result = evaluate(model, k=10, task=task, param_search=True)
             print(EvaluationResult.to_dataframe([result]))
             results.append(result)
     
