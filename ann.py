@@ -111,8 +111,7 @@ class KerasClassANN(ClassificationModel):
         self.model.compile(loss = "binary_crossentropy",optimizer="adam",metrics=["accuracy"])
     
     def param_search(self, X, y):
-        self.model, self.hyperparams = sklearn_param_search(
-            self.model, self.param_grid, X, y)
+        pass # Disabled
 
     def train(self, X, y):
     
@@ -146,9 +145,8 @@ class KerasRegANN(RegressionModel):
         self.model.compile(loss = "mean_squared_error",optimizer="adam",metrics=[r_square])
     
     def param_search(self, X, y):
-        self.model, self.hyperparams = sklearn_param_search(
-            self.model, self.param_grid, X, y)
-
+        pass # Disabled
+        
     def train(self, X, y):
     
         y_numpy = pd.DataFrame(y).to_numpy().flatten()
