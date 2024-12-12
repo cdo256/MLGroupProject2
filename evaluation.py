@@ -82,9 +82,8 @@ class EvaluationResult:
     test_accuracy_stdev: float
     train_time_mean: float
     test_time_mean: float
-    param_search_time: float
 
-    def __init__(self, model, task, train_accuracies, test_accuracies, train_times, test_times, param_search_time):
+    def __init__(self, model, task, train_accuracies, test_accuracies, train_times, test_times):
         self.model = model
         self.task = task
         self.train_accuracy_mean = statistics.mean(train_accuracies)
@@ -93,7 +92,6 @@ class EvaluationResult:
         self.test_accuracy_stdev = statistics.stdev(test_accuracies)
         self.train_time_mean = statistics.mean(train_times)
         self.test_time_mean = statistics.mean(test_times)
-        self.param_search_time = param_search_time
 
     def to_dict(self, plain=False):
         if plain:
@@ -106,7 +104,6 @@ class EvaluationResult:
                 'test_accuracy_stdev': self.test_accuracy_stdev,
                 'train_time_mean': self.train_time_mean,
                 'test_time_mean': self.test_time_mean,
-                'param_search_time': self.param_search_time,
             }
         else: 
             return {
@@ -116,7 +113,6 @@ class EvaluationResult:
                 'test_accuracy': f'{self.test_accuracy_mean:.3f} ± {self.test_accuracy_stdev:.3f}',
                 'train_time_mean': f'{self.train_time_mean*1000:.3f}ms',
                 'test_time_mean': f'{self.test_time_mean*1000:.3f}ms',
-                'param_search_time': f'{self.param_search_time*1000:.3f}ms',
             }
 
     @classmethod
@@ -199,7 +195,7 @@ def evaluate(model, k, task, param_search=False):
         test_accuracies=test_accuracies,
         train_times=train_times,
         test_times=test_times,
-        param_search_time=param_search_time)
+    )
 
 def get_models(features):
     return {
