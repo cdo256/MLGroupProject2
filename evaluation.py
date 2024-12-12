@@ -1,5 +1,5 @@
 import pandas as pd
-from linear_regression import LinearRegression
+from linear_regression import LinearRegression, ElasticNetRegressor
 from logistic_regression import LogisticRegression
 from preprocess import Preprocessor, clf_output_col, reg_output_col
 from sklearn.model_selection import train_test_split
@@ -213,6 +213,7 @@ def get_models(features):
         'ANNClassifier': (modelType.CLASSIFICATION, ANNClassifier(random_state = 1, max_iter = 2000)), 
         'KerasClassANN': (modelType.CLASSIFICATION, KerasClassANN(input_dim = len(features),output_size = 1,hid_size = (100,100,100))), 
         'RandomForestClassifierModel': (modelType.CLASSIFICATION, RandomForestClassifierModel()),
+        'ElasticNetRegressor': (modelType.CLASSIFICATION, ElasticNetRegressor()),
     }
 
 def predict(task, test_filename):
@@ -261,6 +262,7 @@ if __name__ == '__main__':
             'ANNRegressor',
             'RandomForestClassifierModel',
             'RandomForestRegressorModel',
+            'ElasticNetRegressor'
         ]
         for model_name in select_models:
             t, model = models[model_name]
