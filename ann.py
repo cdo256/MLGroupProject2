@@ -10,16 +10,17 @@ class ANNClassifier(ClassificationModel):
     def __init__(self, **hyperparams):
         self.name = 'ANNClassifier'
         self.param_grid = {
-            'activation': ['relu', 'logistic'],
+            #'activation': ['relu', 'logistic'],
             # Strength of L2 regularization
-            #'alpha': [1e-3, 1e-4, 1e-5],
+            'alpha': [5e-3, 1e-3, 1e-4, 1e-5],
             'hidden_layer_sizes': [
                 (100,),
-                #(100,20),
-                #(40,20,5),
-                #(40,20,5,5),
-                #(40,20,20,5,5),
-                #(100,100,100),
+                (100,20),
+                (40,20,5),
+                (40,20,5,5),
+                (40,20,20,5,5),
+                (100,40,40,20,5,5),
+                (100,100,100),
             ],
         }
         self.hyperparams = hyperparams
