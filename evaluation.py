@@ -256,7 +256,14 @@ if __name__ == '__main__':
     for task in modelType:
         X, y = init(task)
         models = get_models(features)
-        for t, model in models.values():
+        select_models = [
+        #    'ANNClassifier',
+            'ANNRegressor',
+            'RandomForestClassifierModel',
+            'RandomForestRegressorModel',
+        ]
+        for model_name in select_models:
+            t, model = models[model_name]
             if t != task:
                 continue
             result = evaluate(model, k=10, task=task, param_search=True)
