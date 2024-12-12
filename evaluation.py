@@ -34,6 +34,11 @@ def read_features(filename):
     except FileNotFoundError:
         return None
 
+feature_counts = {
+    modelType.REGRESSION: 3,
+    modelType.CLASSIFICATION: 30
+}
+
 def init(task):
     global features, pp, base_df, retained_features
 
@@ -66,7 +71,12 @@ def init(task):
             print(f'Warning: Loading features failed')
     if features is None:
         print(f'Generating features...')
-        features = fs.main(X, y, top_n_features, task, retained_features=retained_features)
+        features = fs.main(
+            X, y,
+            feature_counts[task],
+            task,
+            retained_features=retained_features
+        )
         if save_features:
             print(f'Saving features to {filename}...')
             write_features(features, filename)
@@ -215,6 +225,7 @@ def get_models(features):
         'KerasClassANN': (modelType.CLASSIFICATION, KerasClassANN(input_dim = len(features),output_size = 1,hid_size = (100,100,100))), 
         'RandomForestClassifierModel': (modelType.CLASSIFICATION, RandomForestClassifierModel()),
     }
+
 
 def predict(task, test_filename):
     predictions = {}
