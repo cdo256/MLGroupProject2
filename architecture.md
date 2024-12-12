@@ -108,7 +108,7 @@ class LinearRegression(RegressionModel):
         self.model = linear_model.LinearRegression(**hyperparams)
     
     def param_search(self, X, y):
-        self.model, self.hyperparams = sklearn_param_search(
+        self.hyperparams = sklearn_param_search(
             self.model, self.param_grid, X, y)
 
     def train(self, X, y):

@@ -17,12 +17,24 @@ def r_square(y_true, y_pred):
 class ANNClassifier(ClassificationModel):
     def __init__(self, **hyperparams):
         self.name = 'ANNClassifier'
-        self.param_grid = {}
+        self.param_grid = {
+            'activation': ['relu', 'logistic'],
+            # Strength of L2 regularization
+            #'alpha': [1e-3, 1e-4, 1e-5],
+            'hidden_layer_sizes': [
+                (100,),
+                #(100,20),
+                #(40,20,5),
+                #(40,20,5,5),
+                #(40,20,20,5,5),
+                #(100,100,100),
+            ],
+        }
         self.hyperparams = hyperparams
         self.model = MLPClassifier(**hyperparams)
     
     def param_search(self, X, y):
-        self.model, self.hyperparams = sklearn_param_search(
+        self.hyperparams = sklearn_param_search(
             self.model, self.param_grid, X, y)
 
     def train(self, X, y):
@@ -48,7 +60,7 @@ class ANNRegressor(RegressionModel):
         self.model = MLPRegressor(**hyperparams)
     
     def param_search(self, X, y):
-        self.model, self.hyperparams = sklearn_param_search(
+        self.hyperparams = sklearn_param_search(
             self.model, self.param_grid, X, y)
 
     def train(self, X, y):

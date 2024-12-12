@@ -9,8 +9,7 @@ class LogisticRegression(ClassificationModel):
         self.model = sklearn.linear_model.LogisticRegression(**hyperparams)
     
     def param_search(self, X, y):
-        self.model, self.hyperparams = sklearn_param_search(
-            self.model, self.param_grid, X, y)
+        pass # No hyperparameters to tune.
 
     def train(self, X, y):
         self.model.fit(X, y)

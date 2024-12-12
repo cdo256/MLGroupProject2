@@ -13,8 +13,8 @@ class RandomForestClassifierModel(ClassificationModel):
         self.model = RandomForestClassifier(**hyperparams)
 
     def param_search(self, X, y):
-        self.model, self.hyperparams = sklearn_param_search(
-        self.model, self.param_grid, X, y)
+        self.hyperparams = sklearn_param_search(
+            self.model, self.param_grid, X, y)
 
     def train(self, X, y):
         self.model.fit(X, y)
@@ -39,8 +39,8 @@ class RandomForestRegressorModel(RegressionModel):
         self.model = RandomForestRegressor(**hyperparams)
 
     def param_search(self, X, y):
-        self.model, self.hyperparams = sklearn_param_search(
-        self.model, self.param_grid, X, y)
+        self.hyperparams = sklearn_param_search(
+            self.model, self.param_grid, X, y)
 
     def train(self, X, y):
         # Ensure y is a 1D numpy array for fitting
