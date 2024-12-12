@@ -138,6 +138,20 @@ def write_params(model_name, params):
     with open(filename, 'w') as file:
         file.write(json.dumps(params))
 
+def maybe_param_search(model_name, task):
+    global base_df
+    params = None
+    try:
+        params = load_params(model_name)
+    except FileNotFoundError:
+        print(f'File not found.')
+    if params is None:
+        X, y = pp.preprocess_fit(base_df, task=task)
+        time_function(model.param_search, X, y)
+        params = model.hyperparams
+        write_params(model_name, params)
+    return params
+
 # Perform cross-validation
 def evaluate(model, k, task, param_search=False):
     global features, pp, base_df, retained_features
@@ -149,18 +163,10 @@ def evaluate(model, k, task, param_search=False):
     
     pp = Preprocessor()
 
-    params = None
-    param_search_time = 0
     if param_search:
-        try:
-            params = load_params(model_name)
-        except FileNotFoundError:
-            print(f'File not found.')
-        if params is None:
-            X, y = pp.preprocess_fit(base_df, task=task)
-            time_function(model.param_search, X, y)
-            params = model.hyperparams
-            write_params(model_name, params)
+        params = maybe_param_search(model_name, task)
+    else:
+        params = None
 
     train_accuracies = []
     test_accuracies = []
