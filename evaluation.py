@@ -218,11 +218,23 @@ def get_models(features):
         'LinearRegression': (modelType.REGRESSION, LinearRegression()),
         'ElasticNetRegressor': (modelType.REGRESSION, ElasticNetRegressor()),
         'ANNRegressor': (modelType.REGRESSION, ANNRegressor(random_state = 1, max_iter = 5000)),
-        'KerasRegANN': (modelType.REGRESSION, KerasRegANN(input_dim = len(features),output_size = 1,hid_size = (100,100,100))), 
+        'KerasRegANN': (modelType.REGRESSION, KerasRegANN(
+            input_dim = len(features),
+            output_size = 1,
+            alpha = 0.05,
+            activation = 'relu',
+            hidden_layer_sizes = (400,100,100,40,40,20,20,5,5)
+        )), 
         'RandomForestRegressorModel': (modelType.REGRESSION, RandomForestRegressorModel()), 
         'LogisticRegression': (modelType.CLASSIFICATION, LogisticRegression(max_iter=1000)), 
         'ANNClassifier': (modelType.CLASSIFICATION, ANNClassifier(random_state = 1, max_iter = 2000)), 
-        'KerasClassANN': (modelType.CLASSIFICATION, KerasClassANN(input_dim = len(features),output_size = 1,hid_size = (100,100,100))), 
+        'KerasClassANN': (modelType.CLASSIFICATION, KerasClassANN(
+            input_dim = len(features),
+            output_size = 1,
+            alpha = 0.001,
+            activation = 'relu',
+            hidden_layer_sizes = (400,100,100,40,40,20,20,5,5)
+        )),
         'RandomForestClassifierModel': (modelType.CLASSIFICATION, RandomForestClassifierModel()),
     }
 

@@ -101,12 +101,33 @@ class KerasClassANN(ClassificationModel):
         self.param_grid = {}
         self.hyperparams = hyperparams
 
+
+        alpha = hyperparams.get('alpha')
+        if alpha:
+            regularizer = keras.regularizers.L2(
+                alpha
+            )
+        else:
+            regularizer = None
+
+        activation = hyperparams.get('activation')
+        if activation is None:
+            activation = 'relu'
+        elif activation == 'logistic':
+            activation = 'sigmoid'
+
         self.model = keras.models.Sequential()
-        self.model.add(keras.layers.Dense(self.hyperparams["input_dim"],input_dim = self.hyperparams["input_dim"], activation = "relu"))
+        self.model.add(keras.layers.Dense(
+            self.hyperparams["input_dim"],
+            activation=activation,
+            kernel_regularizer=regularizer))
 
-        for i in self.hyperparams["hid_size"]:
-            self.model.add(keras.layers.Dense(i, activation = "relu"))
-
+        for size in self.hyperparams["hidden_layer_sizes"]:
+            self.model.add(keras.layers.Dense(
+                size,
+                activation=activation,
+                kernel_regularizer=regularizer))
+    
         self.model.add(keras.layers.Dense(self.hyperparams["output_size"],activation = "sigmoid"))
         self.model.compile(loss = "binary_crossentropy",optimizer="adam",metrics=["accuracy"])
     
@@ -135,13 +156,33 @@ class KerasRegANN(RegressionModel):
         self.param_grid = {}
         self.hyperparams = hyperparams
 
+        alpha = hyperparams.get('alpha')
+        if alpha:
+            regularizer = keras.regularizers.L2(
+                alpha
+            )
+        else:
+            regularizer = None
+
+        activation = hyperparams.get('activation')
+        if activation is None:
+            activation = 'relu'
+        elif activation == 'logistic':
+            activation = 'sigmoid'
+
         self.model = keras.models.Sequential()
-        self.model.add(keras.layers.Dense(self.hyperparams["input_dim"],input_dim = self.hyperparams["input_dim"], activation = "relu"))
+        self.model.add(keras.layers.Dense(
+            self.hyperparams["input_dim"],
+            activation=activation,
+            kernel_regularizer=regularizer))
 
-        for i in self.hyperparams["hid_size"]:
-            self.model.add(keras.layers.Dense(i, activation = "relu"))
+        for size in self.hyperparams["hidden_layer_sizes"]:
+            self.model.add(keras.layers.Dense(
+                size,
+                activation=activation,
+                kernel_regularizer=regularizer))
 
-        self.model.add(keras.layers.Dense(self.hyperparams["output_size"]))
+        self.model.add(keras.layers.Dense(self.hyperparams["output_size"], activation='linear'))
         self.model.compile(loss = "mean_squared_error",optimizer="adam",metrics=[r_square])
     
     def param_search(self, X, y):
