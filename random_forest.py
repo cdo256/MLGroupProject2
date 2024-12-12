@@ -8,7 +8,11 @@ from model import *
 class RandomForestClassifierModel(ClassificationModel):
     def __init__(self, **hyperparams):
         self.name = 'RandomForestClassifierModel'
-        self.param_grid = {}
+        self.param_grid = {
+            'n_estimators': [100, 500],
+            'max_depth': [3, 5, 10, None],
+            'criterion': ['gini', 'entropy', 'log_loss'],
+        }
         self.hyperparams = hyperparams
         self.model = RandomForestClassifier(**hyperparams)
 
@@ -34,7 +38,11 @@ class RandomForestClassifierModel(ClassificationModel):
 class RandomForestRegressorModel(RegressionModel):
     def __init__(self, **hyperparams):
         self.name = 'RandomForestRegressorModel'
-        self.param_grid = {}
+        self.param_grid = {
+            'n_estimators': [100, 500],
+            'max_depth': [3, 5, 10, None],
+            'criterion': ['squared_error', 'friedman_mse', 'absolute_error']
+        }
         self.hyperparams = hyperparams
         self.model = RandomForestRegressor(**hyperparams)
 
