@@ -13,6 +13,7 @@ import feat_selection as fs
 from ann import ANNClassifier, ANNRegressor,KerasClassANN, KerasRegANN
 from BaseClasses import modelType
 from random_forest import RandomForestClassifierModel, RandomForestRegressorModel
+from dimensionality_reduction import PCAvsLDAComparison
 
 enable_feature_selection = True
 load_features = True
@@ -58,10 +59,11 @@ def init(task):
         case _:
             raise ValueError('Invalid task')
 
-    #print(f"Y Columns:\n{y.columns}")
-    #reducer = PCAvsLDAComparison(base_df, y, top_n_features) ### This does not work currently, related error - "Data needs to be imputed so there are no NAN values"
-    #best_df = reducer.main(y.columns[0])
-    #print(best_df)
+    print(f"Y Columns:\n{y}")
+    reducer = PCAvsLDAComparison(X, y, top_n_features, task) ### This does not work currently, related error - "Data needs to be imputed so there are no NAN values"
+    best_df = reducer.main(X, y, top_n_features, task)
+    print(best_df)
+
     retained_features = ['ER', 'Gene', 'HER2']
 
     if load_features:

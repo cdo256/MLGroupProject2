@@ -3,17 +3,18 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.svm import SVC, SVR
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report
-from sklearn.neural_network import MLPClassifier
-
+from sklearn.neural_network import MLPClassifier, MLPRegressor
+from BaseClasses import modelType
+from sklearn.metrics import mean_squared_error, r2_score
 
 class PCAvsLDAComparison:
-    def __init__(self, data, target, n_components):
+    def __init__(self, data, target, n_components, task):
         """
         Initialize the class with dataset and target variable
         Args:
@@ -24,7 +25,7 @@ class PCAvsLDAComparison:
         self.data = data
         self.target = target
         self.n_components = n_components
-
+        self.task = task
         # # Standardize the features
         # self.scaler = StandardScaler()
         # self.data_scaled = self.scaler.fit_transform(self.data)
@@ -109,6 +110,49 @@ class PCAvsLDAComparison:
 
         return results
 
+    def evaluate_regressors(self, X_train, X_test, y_train, y_test):
+        regressors = {
+            'Logistic Regression': LinearRegression(),
+            'Random Forest': RandomForestRegressor(random_state=42),
+            'SVM': SVR(),
+            'ANN': MLPRegressor(random_state=42)
+        }
+
+        # Grid search for hyperparameter tuning of the ANN model
+        ann_param_grid = {
+            'hidden_layer_sizes': [(50,), (100,), (50, 50), (100, 100)],  # Different sizes of hidden layers
+            'activation': ['relu', 'tanh', 'logistic'],  # Activation functions
+            'solver': ['adam', 'sgd'],  # Optimizers
+            'max_iter': [1000],  # Number of iterations for training
+            'alpha': [0.0001, 0.001]  # Regularization parameter
+        }
+
+        # Perform grid search on ANN to find the best parameters
+        ann_grid_search = GridSearchCV(MLPRegressor(random_state=42), ann_param_grid, cv=3)
+
+        results = {}
+
+        for model_name, model in regressors.items():
+            if model_name == 'ANN':
+                print(f"Tuning {model_name} with GridSearchCV...")
+                ann_grid_search.fit(X_train, y_train)
+                best_ann_model = ann_grid_search.best_estimator_
+                y_pred = best_ann_model.predict(X_test)
+                mse = mean_squared_error(y_test, y_pred)
+                r2 = r2_score(y_test, y_pred)
+                results[model_name] = {'MSE': mse, 'R²': r2}
+                print(f"Best ANN Parameters: {ann_grid_search.best_params_}")
+                print(f"MSE with {model_name}: {mse:.4f}, R²: {r2:.4f}")
+            else:
+                model.fit(X_train, y_train)
+                y_pred = model.predict(X_test)
+                mse = mean_squared_error(y_test, y_pred)
+                r2 = r2_score(y_test, y_pred)
+                results[model_name] = {'MSE': mse, 'R²': r2}
+                print(f"MSE with {model_name}: {mse:.4f}, R²: {r2:.4f}")
+
+        return results
+
     def compare_performance(self):
         """Compare performance of PCA, LDA, and no DR using multiple models and return results as DataFrame."""
         # Apply PCA and LDA
@@ -153,46 +197,71 @@ class PCAvsLDAComparison:
 
     def apply_best_dr_technique(self):
         """Check the mean accuracy of No DR, PCA, and LDA, and apply the best DR technique to the entire dataset."""
-        # Apply PCA and LDA
+        # no dimendionality reduction
+        match self.task:
+            case modelType.CLASSIFICATION:
+                no_dr_results = self.evaluate_classifiers(self.X_train, self.X_test, self.y_train, self.y_test)
+                no_dr_mean_accuracy = np.mean(list(no_dr_results.values()))
+            case modelType.REGRESSION:
+                no_dr_results = self.evaluate_regressors(self.X_train, self.X_test, self.y_train, self.y_test)
+                no_dr_mean_metric = np.mean([metrics['R²'] for metrics in no_dr_results.values()])
+
+        # PCA
         X_train_pca, X_test_pca = self.apply_pca()
-        X_train_lda, X_test_lda = self.apply_lda()
+        match self.task:
+            case modelType.CLASSIFICATION:
+                pca_results = self.evaluate_classifiers(X_train_pca, X_test_pca, self.y_train, self.y_test)
+                pca_mean_accuracy = np.mean(list(pca_results.values()))
+            case modelType.REGRESSION:
+                pca_results = self.evaluate_regressors(X_train_pca, X_test_pca, self.y_train, self.y_test)
+                pca_mean_metric = np.mean([metrics['R²'] for metrics in pca_results.values()])
 
-        # Evaluate classifiers
-        pca_results = self.evaluate_classifiers(X_train_pca, X_test_pca, self.y_train, self.y_test)
-        lda_results = self.evaluate_classifiers(X_train_lda, X_test_lda, self.y_train, self.y_test)
-        no_dr_results = self.evaluate_classifiers(self.X_train, self.X_test, self.y_train, self.y_test)
+        # if it's classification, LDA
+        if(self.task == modelType.CLASSIFICATION):
+            X_train_lda, X_test_lda = self.apply_lda()
+            lda_results = self.evaluate_classifiers(X_train_lda, X_test_lda, self.y_train, self.y_test)
+            lda_mean_accuracy = np.mean(list(lda_results.values()))
 
-        # Calculate the mean accuracy for No DR, PCA, and LDA across all classifiers
-        no_dr_mean_accuracy = np.mean(list(no_dr_results.values()))
-        pca_mean_accuracy = np.mean(list(pca_results.values()))
-        lda_mean_accuracy = np.mean(list(lda_results.values()))
-
-        # Apply the best DR technique (No DR, PCA, or LDA) to the whole dataset
-        if no_dr_mean_accuracy > max(pca_mean_accuracy, lda_mean_accuracy):
-            print(
-                f"No DR is the top performing technique with mean accuracy {no_dr_mean_accuracy:.4f}. Using original data.")
-            return self.data  # Return the original dataset
-        elif pca_mean_accuracy > lda_mean_accuracy:
-            print(
-                f"PCA is the top performing technique with mean accuracy {pca_mean_accuracy:.4f}. Applying PCA to the entire dataset.")
-            pca = PCA(n_components=self.n_components)
-            X_pca_full = pca.fit_transform(self.data)
-            pca_df = pd.DataFrame(X_pca_full, columns=[f'PC{i + 1}' for i in range(self.n_components)])
-            return pca_df
-        else:
-            print(
-                f"LDA is the top performing technique with mean accuracy {lda_mean_accuracy:.4f}. Applying LDA to the entire dataset.")
-            lda = LDA(n_components=self.lda_components)
-            X_lda_full = lda.fit_transform(self.data, self.target)
-            lda_df = pd.DataFrame(X_lda_full, columns=[f'LD{i + 1}' for i in range(self.lda_components)])
-            return lda_df
+        if(self.task == modelType.REGRESSION):
+            if no_dr_mean_metric > pca_mean_metric:
+                print(
+                    f"No DR is the top performing technique with mean accuracy {no_dr_mean_metric:.4f}. Using original data.")
+                return self.data  # Return the original dataset
+            else:
+                print(
+                    f"PCA is the top performing technique with mean accuracy {pca_mean_metric:.4f}. Applying PCA to the entire dataset.")
+                pca = PCA(n_components=self.n_components)
+                X_pca_full = pca.fit_transform(self.data)
+                pca_df = pd.DataFrame(X_pca_full, columns=[f'PC{i + 1}' for i in range(self.n_components)])
+                return pca_df
+            
+        if(self.task == modelType.CLASSIFICATION):
+            # Apply the best DR technique (No DR, PCA, or LDA) to the whole dataset
+            if no_dr_mean_accuracy > max(pca_mean_accuracy, lda_mean_accuracy):
+                print(
+                    f"No DR is the top performing technique with mean accuracy {no_dr_mean_accuracy:.4f}. Using original data.")
+                return self.data  # Return the original dataset
+            elif pca_mean_accuracy > lda_mean_accuracy:
+                print(
+                    f"PCA is the top performing technique with mean accuracy {pca_mean_accuracy:.4f}. Applying PCA to the entire dataset.")
+                pca = PCA(n_components=self.n_components)
+                X_pca_full = pca.fit_transform(self.data)
+                pca_df = pd.DataFrame(X_pca_full, columns=[f'PC{i + 1}' for i in range(self.n_components)])
+                return pca_df
+            else:
+                print(
+                    f"LDA is the top performing technique with mean accuracy {lda_mean_accuracy:.4f}. Applying LDA to the entire dataset.")
+                lda = LDA(n_components=self.lda_components)
+                X_lda_full = lda.fit_transform(self.data, self.target)
+                lda_df = pd.DataFrame(X_lda_full, columns=[f'LD{i + 1}' for i in range(self.lda_components)])
+                return lda_df
 
     def evaluate_no_dr(self):
         """Evaluate the performance of classifiers without any dimensionality reduction."""
         print("Evaluating without any dimensionality reduction...")
         return self.evaluate_classifiers(self.X_train, self.X_test, self.y_train, self.y_test)
 
-    def main(self, classifier):
+    def main(self, base_df, y, top_n_features, task):
         # Load the dataset
         # df = pd.read_csv("TrainDataset2024.csv")
         # df = pd.read_excel("preprocessed.xlsx")
@@ -205,17 +274,17 @@ class PCAvsLDAComparison:
         #         df[column] = df[column].fillna(0).astype(int)  # Fill NaNs with 0 and convert to int
         #     except Exception as e:
         #         print(f"Skipping column {column}: {e}")
-        y = self.data[classifier]
-        X = self.data.drop([classifier], axis=1)
+        #y = self.data[classifier]
+        #X = self.data.drop([classifier], axis=1)
 
         # Get the number of features in X
-        top_n_features = X.shape[1]  # This will give the number of columns (features) in X
+        #top_n_features = X.shape[1]  # This will give the number of columns (features) in X
 
         # Initialize the comparison class
-        comparison = PCAvsLDAComparison(X, y, n_components=top_n_features)
+        comparison = PCAvsLDAComparison(base_df, y, top_n_features, task)
 
         # Compare performance of No DR, PCA, and LDA
-        results_df = comparison.compare_performance()
+        # results_df = comparison.compare_performance()
 
         # Apply the best DR technique to the whole dataset
         best_dr_df = comparison.apply_best_dr_technique()
